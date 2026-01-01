@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1a73e8">
+  <title>Audit Dashboard - Snipe-IT Scanner</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: #1a73e8;
+      color: white;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .header h1 {
+      font-size: 1.5rem;
+      font-weight: 500;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+
+    .btn-white {
+      background: white;
+      color: #1a73e8;
+    }
+
+    .btn-white:hover {
+      background: #f1f3f4;
+    }
+
+    .btn-success {
+      background: #34a853;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #2d9249;
+    }
+
+    .btn-danger {
+      background: #ea4335;
+      color: white;
+      padding: 6px 12px;
+    }
+
+    .btn-danger:hover {
+      background: #d33426;
+    }
+
+    .btn-primary {
+      background: #1a73e8;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #1557b0;
+    }
+
+    .container {
+      padding: 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .stat-card h3 {
+      font-size: 0.875rem;
+      color: #666;
+      margin-bottom: 8px;
+    }
+
+    .stat-card .value {
+      font-size: 2rem;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .stat-card.match .value { color: #34a853; }
+    .stat-card.mismatch .value { color: #ea4335; }
+
+    .table-container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .table-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .table-header h2 {
+      font-size: 1.125rem;
+      color: #333;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      background: #f8f9fa;
+      font-weight: 500;
+      color: #666;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    td {
+      font-size: 0.875rem;
+      color: #333;
+    }
+
+    tr:hover {
+      background: #f8f9fa;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+    }
+
+    .status-match {
+      background: #e6f4ea;
+      color: #137333;
+    }
+
+    .status-mismatch {
+      background: #fce8e6;
+      color: #c5221f;
+    }
+
+    .posted-yes {
+      color: #34a853;
+    }
+
+    .posted-no {
+      color: #ea4335;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+    }
+
+    .empty-state h3 {
+      margin-bottom: 8px;
+    }
+
+    .filters {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .filter-select {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      background: white;
+    }
+
+    .search-input {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      width: 250px;
+    }
+
+    /* Login Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal {
+      background: white;
+      border-radius: 12px;
+      padding: 32px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+
+    .modal h2 {
+      margin-bottom: 8px;
+      color: #333;
+    }
+
+    .modal p {
+      color: #666;
+      margin-bottom: 24px;
+      font-size: 0.875rem;
+    }
+
+    .modal .form-group {
+      margin-bottom: 16px;
+    }
+
+    .modal label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.875rem;
+      color: #666;
+    }
+
+    .modal input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+
+    .modal input:focus {
+      outline: none;
+      border-color: #1a73e8;
+    }
+
+    .modal .error {
+      color: #ea4335;
+      font-size: 0.875rem;
+      margin-top: 8px;
+      display: none;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 24px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+
+    .tab-btn {
+      padding: 12px 24px;
+      border: none;
+      background: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #666;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover {
+      color: #1a73e8;
+    }
+
+    .tab-btn.active {
+      color: #1a73e8;
+      border-bottom-color: #1a73e8;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* API Token Section */
+    .api-token-section {
+      background: #fff3e0;
+      border: 1px solid #ffcc80;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .api-token-section .form-group {
+      flex: 1;
+      margin: 0;
+    }
+
+    .api-token-section label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.875rem;
+      color: #666;
+    }
+
+    .api-token-section input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.875rem;
+    }
+
+    /* Unaudited Stats */
+    .unaudited-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .unaudited-stat-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      border: 2px solid transparent;
+    }
+
+    .unaudited-stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .unaudited-stat-card.selected {
+      border-color: #1a73e8;
+    }
+
+    .unaudited-stat-card h3 {
+      font-size: 0.875rem;
+      color: #666;
+      margin-bottom: 8px;
+    }
+
+    .unaudited-stat-card .value {
+      font-size: 2rem;
+      font-weight: 600;
+    }
+
+    .unaudited-stat-card.never .value { color: #ea4335; }
+    .unaudited-stat-card.not-this-year .value { color: #fbbc04; }
+    .unaudited-stat-card.overdue .value { color: #9c27b0; }
+    .unaudited-stat-card.total .value { color: #1a73e8; }
+
+    .loading-spinner {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+
+    .btn-secondary {
+      background: #f1f3f4;
+      color: #333;
+    }
+
+    .btn-secondary:hover {
+      background: #e0e0e0;
+    }
+
+    @media (max-width: 768px) {
+      .header {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .stats {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .filters {
+        flex-direction: column;
+      }
+
+      .search-input {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Login Modal -->
+  <div id="login-modal" class="modal-overlay">
+    <div class="modal">
+      <h2>Admin Login</h2>
+      <p>Enter the admin password to access the dashboard.</p>
+      <div class="form-group">
+        <label for="admin-password">Password</label>
+        <input type="password" id="admin-password" placeholder="Enter password">
+        <div class="error" id="login-error">Invalid password. Please try again.</div>
+      </div>
+      <button class="btn btn-primary" id="login-btn" style="width: 100%;">Login</button>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div id="main-content" class="hidden">
+    <div class="header">
+      <h1>Audit Dashboard</h1>
+      <div class="header-actions">
+        <a href="/" class="btn btn-white">Back to Scanner</a>
+        <button class="btn btn-success" id="export-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Export Excel
+        </button>
+      </div>
+    </div>
+
+    <div class="container">
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="audits">Audit Records</button>
+        <button class="tab-btn" data-tab="unaudited">Unaudited Assets</button>
+      </div>
+
+      <!-- Tab: Audit Records -->
+      <div class="tab-content active" id="tab-audits">
+      <div class="stats">
+        <div class="stat-card">
+          <h3>Total Audits</h3>
+          <div class="value" id="stat-total">0</div>
+        </div>
+        <div class="stat-card match">
+          <h3>Matches</h3>
+          <div class="value" id="stat-match">0</div>
+        </div>
+        <div class="stat-card mismatch">
+          <h3>Mismatches</h3>
+          <div class="value" id="stat-mismatch">0</div>
+        </div>
+        <div class="stat-card">
+          <h3>Posted to Snipe-IT</h3>
+          <div class="value" id="stat-posted">0</div>
+        </div>
+      </div>
+
+      <div class="filters">
+        <select class="filter-select" id="status-filter">
+          <option value="">All Status</option>
+          <option value="match">Match</option>
+          <option value="mismatch">Mismatch</option>
+        </select>
+        <input type="text" class="search-input" id="search-input" placeholder="Search by asset tag or name...">
+      </div>
+
+      <div class="table-container">
+        <div class="table-header">
+          <h2>Audit Records</h2>
+          <button class="btn btn-danger" id="clear-all-btn" style="display: none;">Clear All</button>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Asset Tag</th>
+                <th>Asset Name</th>
+                <th>Expected Location</th>
+                <th>Actual Location</th>
+                <th>Status</th>
+                <th>Audited By</th>
+                <th>Posted</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="audit-table-body">
+            </tbody>
+          </table>
+        </div>
+        <div id="empty-state" class="empty-state" style="display: none;">
+          <h3>No audit records yet</h3>
+          <p>Start scanning assets to see records here.</p>
+        </div>
+      </div>
+      </div>
+
+      <!-- Tab: Unaudited Assets -->
+      <div class="tab-content" id="tab-unaudited">
+        <div class="api-token-section">
+          <div class="form-group">
+            <label for="snipeit-api-token">Snipe-IT API Token (required to fetch assets)</label>
+            <input type="password" id="snipeit-api-token" placeholder="Enter your Snipe-IT API token">
+          </div>
+          <button class="btn btn-primary" id="fetch-assets-btn">Fetch Assets</button>
+          <button class="btn btn-secondary" id="refresh-assets-btn" style="display: none;">Refresh</button>
+        </div>
+
+        <div id="cache-status" style="display: none; margin-bottom: 16px; padding: 8px 12px; background: #e8f5e9; border-radius: 6px; font-size: 0.875rem; color: #2e7d32;">
+          Data loaded from cache (<span id="cache-age">0</span> seconds ago). <a href="#" id="force-refresh-link" style="color: #1a73e8;">Click to refresh</a>
+        </div>
+
+        <div id="unaudited-loading" class="loading-spinner" style="display: none;">
+          <div id="loading-text">Loading assets from Snipe-IT...</div>
+        </div>
+
+        <div id="unaudited-content" style="display: none;">
+          <div class="unaudited-stats">
+            <div class="unaudited-stat-card total selected" data-filter="all" onclick="filterUnauditedAssets('all')">
+              <h3>Total Assets</h3>
+              <div class="value" id="unaudited-stat-total">0</div>
+            </div>
+            <div class="unaudited-stat-card never" data-filter="never" onclick="filterUnauditedAssets('never')">
+              <h3>Never Audited</h3>
+              <div class="value" id="unaudited-stat-never">0</div>
+            </div>
+            <div class="unaudited-stat-card not-this-year" data-filter="not-this-year" onclick="filterUnauditedAssets('not-this-year')">
+              <h3>Not Audited This Year</h3>
+              <div class="value" id="unaudited-stat-not-this-year">0</div>
+            </div>
+            <div class="unaudited-stat-card overdue" data-filter="overdue" onclick="filterUnauditedAssets('overdue')">
+              <h3>Audit Overdue</h3>
+              <div class="value" id="unaudited-stat-overdue">0</div>
+            </div>
+          </div>
+
+          <div class="filters">
+            <input type="text" class="search-input" id="unaudited-search-input" placeholder="Search by asset tag, name, or location..." style="width: 300px;">
+            <button class="btn btn-success" id="export-unaudited-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Export Filtered
+            </button>
+          </div>
+
+          <div class="table-container">
+            <div class="table-header">
+              <h2 id="unaudited-table-title">All Assets</h2>
+              <span id="unaudited-count" style="color: #666; font-size: 0.875rem;"></span>
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Asset Tag</th>
+                    <th>Name</th>
+                    <th>Model</th>
+                    <th>Category</th>
+                    <th>Location</th>
+                    <th>Assigned To</th>
+                    <th>Last Audit</th>
+                    <th>Next Audit</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="unaudited-table-body">
+                </tbody>
+              </table>
+            </div>
+            <div id="unaudited-empty-state" class="empty-state" style="display: none;">
+              <h3>No assets found</h3>
+              <p>Enter your Snipe-IT API token and click "Fetch Assets" to load asset data.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let allAudits = [];
+    let adminPassword = '';
+    let snipeitAssets = null;
+    let currentUnauditedFilter = 'all';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Check if already logged in
+      const savedPassword = sessionStorage.getItem('admin_password');
+      if (savedPassword) {
+        adminPassword = savedPassword;
+        showDashboard();
+      }
+
+      // Login handlers
+      document.getElementById('login-btn').addEventListener('click', handleLogin);
+      document.getElementById('admin-password').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleLogin();
+      });
+
+      // Dashboard handlers
+      document.getElementById('export-btn').addEventListener('click', exportExcel);
+      document.getElementById('status-filter').addEventListener('change', filterAudits);
+      document.getElementById('search-input').addEventListener('input', filterAudits);
+      document.getElementById('clear-all-btn').addEventListener('click', clearAllAudits);
+
+      // Tab handlers
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+      });
+
+      // Unaudited assets handlers
+      document.getElementById('fetch-assets-btn').addEventListener('click', () => fetchSnipeitAssets(false));
+      document.getElementById('refresh-assets-btn').addEventListener('click', () => fetchSnipeitAssets(true));
+      document.getElementById('force-refresh-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        fetchSnipeitAssets(true);
+      });
+      document.getElementById('unaudited-search-input').addEventListener('input', applyUnauditedFilters);
+      document.getElementById('export-unaudited-btn').addEventListener('click', exportUnauditedAssets);
+
+      // Load saved API token
+      const savedToken = localStorage.getItem('snipeit_api_token');
+      if (savedToken) {
+        document.getElementById('snipeit-api-token').value = savedToken;
+      }
+    });
+
+    async function handleLogin() {
+      const password = document.getElementById('admin-password').value;
+      const errorEl = document.getElementById('login-error');
+
+      try {
+        const response = await fetch('/api/admin/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+
+        if (response.ok) {
+          adminPassword = password;
+          sessionStorage.setItem('admin_password', password);
+          showDashboard();
+        } else {
+          errorEl.style.display = 'block';
+        }
+      } catch (error) {
+        errorEl.style.display = 'block';
+      }
+    }
+
+    function showDashboard() {
+      document.getElementById('login-modal').classList.add('hidden');
+      document.getElementById('main-content').classList.remove('hidden');
+      loadAudits();
+    }
+
+    async function loadAudits() {
+      try {
+        const response = await fetch('/api/audits', {
+          headers: { 'X-Admin-Password': adminPassword }
+        });
+
+        if (response.status === 401) {
+          sessionStorage.removeItem('admin_password');
+          location.reload();
+          return;
+        }
+
+        allAudits = await response.json();
+        updateStats();
+        renderTable(allAudits);
+      } catch (error) {
+        console.error('Error loading audits:', error);
+      }
+    }
+
+    function updateStats() {
+      const total = allAudits.length;
+      const matches = allAudits.filter(a => a.status === 'match').length;
+      const mismatches = allAudits.filter(a => a.status === 'mismatch').length;
+      const posted = allAudits.filter(a => a.snipeit_audit_posted).length;
+
+      document.getElementById('stat-total').textContent = total;
+      document.getElementById('stat-match').textContent = matches;
+      document.getElementById('stat-mismatch').textContent = mismatches;
+      document.getElementById('stat-posted').textContent = posted;
+
+      document.getElementById('clear-all-btn').style.display = total > 0 ? 'block' : 'none';
+    }
+
+    function renderTable(audits) {
+      const tbody = document.getElementById('audit-table-body');
+      const emptyState = document.getElementById('empty-state');
+
+      if (audits.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.style.display = 'block';
+        return;
+      }
+
+      emptyState.style.display = 'none';
+
+      tbody.innerHTML = audits.map(audit => `
+        <tr>
+          <td>${formatDate(audit.created_at)}</td>
+          <td><strong>${escapeHtml(audit.asset_tag)}</strong></td>
+          <td>${escapeHtml(audit.asset_name || '-')}</td>
+          <td>${escapeHtml(audit.expected_location_name || '-')}</td>
+          <td>${escapeHtml(audit.actual_location_name)}</td>
+          <td>
+            <span class="status-badge status-${audit.status}">
+              ${audit.status}
+            </span>
+          </td>
+          <td>${escapeHtml(audit.user_name || '-')}</td>
+          <td class="${audit.snipeit_audit_posted ? 'posted-yes' : 'posted-no'}">
+            ${audit.snipeit_audit_posted ? 'Yes' : 'No'}
+          </td>
+          <td>
+            <button class="btn btn-danger" onclick="deleteAudit(${audit.id})">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function filterAudits() {
+      const statusFilter = document.getElementById('status-filter').value;
+      const searchTerm = document.getElementById('search-input').value.toLowerCase();
+
+      let filtered = allAudits;
+
+      if (statusFilter) {
+        filtered = filtered.filter(a => a.status === statusFilter);
+      }
+
+      if (searchTerm) {
+        filtered = filtered.filter(a =>
+          (a.asset_tag && a.asset_tag.toLowerCase().includes(searchTerm)) ||
+          (a.asset_name && a.asset_name.toLowerCase().includes(searchTerm))
+        );
+      }
+
+      renderTable(filtered);
+    }
+
+    async function deleteAudit(id) {
+      if (!confirm('Are you sure you want to delete this audit record?')) {
+        return;
+      }
+
+      try {
+        await fetch(`/api/audits/${id}`, {
+          method: 'DELETE',
+          headers: { 'X-Admin-Password': adminPassword }
+        });
+        await loadAudits();
+      } catch (error) {
+        alert('Failed to delete audit');
+      }
+    }
+
+    async function clearAllAudits() {
+      if (!confirm('Are you sure you want to delete ALL audit records? This cannot be undone.')) {
+        return;
+      }
+
+      try {
+        for (const audit of allAudits) {
+          await fetch(`/api/audits/${audit.id}`, {
+            method: 'DELETE',
+            headers: { 'X-Admin-Password': adminPassword }
+          });
+        }
+        await loadAudits();
+      } catch (error) {
+        alert('Failed to clear audits');
+      }
+    }
+
+    function exportExcel() {
+      // Create a form to submit with password header
+      const form = document.createElement('form');
+      form.method = 'GET';
+      form.action = '/api/audits/export';
+
+      // We need to use fetch for headers, then trigger download
+      fetch('/api/audits/export', {
+        headers: { 'X-Admin-Password': adminPassword }
+      })
+      .then(response => response.blob())
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'audit_report.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(error => {
+        alert('Failed to export');
+      });
+    }
+
+    function formatDate(dateInput) {
+      if (!dateInput) return '-';
+
+      // Handle Snipe-IT date object format { datetime: "...", formatted: "..." }
+      if (typeof dateInput === 'object' && dateInput !== null) {
+        if (dateInput.formatted) return dateInput.formatted;
+        if (dateInput.datetime) dateInput = dateInput.datetime;
+        else return '-';
+      }
+
+      // Handle string date
+      if (typeof dateInput === 'string') {
+        const date = new Date(dateInput);
+        if (isNaN(date.getTime())) return dateInput; // Return as-is if can't parse
+        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+
+      return '-';
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Tab switching
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabId);
+      });
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.toggle('active', content.id === `tab-${tabId}`);
+      });
+    }
+
+    // Fetch assets from Snipe-IT
+    async function fetchSnipeitAssets(forceRefresh = false) {
+      const apiToken = document.getElementById('snipeit-api-token').value.trim();
+      if (!apiToken) {
+        alert('Please enter your Snipe-IT API token');
+        return;
+      }
+
+      // Save token for future use
+      localStorage.setItem('snipeit_api_token', apiToken);
+
+      const loadingEl = document.getElementById('unaudited-loading');
+      const loadingText = document.getElementById('loading-text');
+      const contentEl = document.getElementById('unaudited-content');
+      const fetchBtn = document.getElementById('fetch-assets-btn');
+      const refreshBtn = document.getElementById('refresh-assets-btn');
+      const cacheStatus = document.getElementById('cache-status');
+
+      loadingEl.style.display = 'block';
+      loadingText.textContent = forceRefresh ? 'Refreshing assets from Snipe-IT...' : 'Loading assets from Snipe-IT...';
+      contentEl.style.display = 'none';
+      cacheStatus.style.display = 'none';
+      fetchBtn.disabled = true;
+      refreshBtn.disabled = true;
+      fetchBtn.textContent = 'Loading...';
+
+      try {
+        const url = forceRefresh ? '/api/snipeit/assets?refresh=true' : '/api/snipeit/assets';
+        const response = await fetch(url, {
+          headers: {
+            'X-Admin-Password': adminPassword,
+            'X-Api-Token': apiToken
+          }
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.details || error.error || 'Failed to fetch assets');
+        }
+
+        snipeitAssets = await response.json();
+        updateUnauditedStats();
+        applyUnauditedFilters();
+
+        // Show cache status if data was cached
+        if (snipeitAssets.cached) {
+          document.getElementById('cache-age').textContent = snipeitAssets.cache_age;
+          cacheStatus.style.display = 'block';
+        } else {
+          cacheStatus.style.display = 'none';
+        }
+
+        loadingEl.style.display = 'none';
+        contentEl.style.display = 'block';
+        refreshBtn.style.display = 'inline-flex';
+      } catch (error) {
+        console.error('Error fetching assets:', error);
+        alert('Failed to fetch assets: ' + error.message);
+        loadingEl.style.display = 'none';
+      } finally {
+        fetchBtn.disabled = false;
+        refreshBtn.disabled = false;
+        fetchBtn.textContent = 'Fetch Assets';
+      }
+    }
+
+    function updateUnauditedStats() {
+      if (!snipeitAssets) return;
+
+      document.getElementById('unaudited-stat-total').textContent = snipeitAssets.total;
+      document.getElementById('unaudited-stat-never').textContent = snipeitAssets.never_audited.length;
+      document.getElementById('unaudited-stat-not-this-year').textContent = snipeitAssets.not_audited_this_year.length;
+      document.getElementById('unaudited-stat-overdue').textContent = snipeitAssets.audit_overdue.length;
+    }
+
+    function filterUnauditedAssets(filter) {
+      currentUnauditedFilter = filter;
+
+      // Update card selection
+      document.querySelectorAll('.unaudited-stat-card').forEach(card => {
+        card.classList.toggle('selected', card.dataset.filter === filter);
+      });
+
+      applyUnauditedFilters();
+    }
+
+    function applyUnauditedFilters() {
+      if (!snipeitAssets) return;
+
+      const searchTerm = document.getElementById('unaudited-search-input').value.toLowerCase();
+
+      // Get assets based on filter
+      let assets;
+      let title;
+      switch (currentUnauditedFilter) {
+        case 'never':
+          assets = snipeitAssets.never_audited;
+          title = 'Never Audited Assets';
+          break;
+        case 'not-this-year':
+          assets = snipeitAssets.not_audited_this_year;
+          title = 'Assets Not Audited This Year';
+          break;
+        case 'overdue':
+          assets = snipeitAssets.audit_overdue;
+          title = 'Audit Overdue Assets';
+          break;
+        default:
+          assets = snipeitAssets.all_assets;
+          title = 'All Assets';
+      }
+
+      // Apply search filter
+      if (searchTerm) {
+        assets = assets.filter(a =>
+          (a.asset_tag && a.asset_tag.toLowerCase().includes(searchTerm)) ||
+          (a.name && a.name.toLowerCase().includes(searchTerm)) ||
+          (a.location && a.location.toLowerCase().includes(searchTerm)) ||
+          (a.model && a.model.toLowerCase().includes(searchTerm))
+        );
+      }
+
+      document.getElementById('unaudited-table-title').textContent = title;
+      document.getElementById('unaudited-count').textContent = `(${assets.length} assets)`;
+      renderUnauditedTable(assets);
+    }
+
+    function renderUnauditedTable(assets) {
+      const tbody = document.getElementById('unaudited-table-body');
+      const emptyState = document.getElementById('unaudited-empty-state');
+
+      if (assets.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.style.display = 'block';
+        emptyState.querySelector('h3').textContent = 'No assets match your criteria';
+        emptyState.querySelector('p').textContent = 'Try adjusting your filters or search term.';
+        return;
+      }
+
+      emptyState.style.display = 'none';
+
+      tbody.innerHTML = assets.map(asset => `
+        <tr>
+          <td><strong>${escapeHtml(asset.asset_tag)}</strong></td>
+          <td>${escapeHtml(asset.name || '-')}</td>
+          <td>${escapeHtml(asset.model || '-')}</td>
+          <td>${escapeHtml(asset.category || '-')}</td>
+          <td>${escapeHtml(asset.location || '-')}</td>
+          <td>${escapeHtml(asset.assigned_to || '-')}</td>
+          <td>${asset.last_audit_date ? formatDate(asset.last_audit_date) : '<span style="color: #ea4335;">Never</span>'}</td>
+          <td>${asset.next_audit_date ? formatDate(asset.next_audit_date) : '-'}</td>
+          <td>${escapeHtml(asset.status || '-')}</td>
+        </tr>
+      `).join('');
+    }
+
+    function exportUnauditedAssets() {
+      if (!snipeitAssets) {
+        alert('Please fetch assets first');
+        return;
+      }
+
+      const searchTerm = document.getElementById('unaudited-search-input').value.toLowerCase();
+
+      // Get assets based on current filter
+      let assets;
+      let filename;
+      switch (currentUnauditedFilter) {
+        case 'never':
+          assets = snipeitAssets.never_audited;
+          filename = 'never_audited_assets.xlsx';
+          break;
+        case 'not-this-year':
+          assets = snipeitAssets.not_audited_this_year;
+          filename = 'not_audited_this_year.xlsx';
+          break;
+        case 'overdue':
+          assets = snipeitAssets.audit_overdue;
+          filename = 'audit_overdue_assets.xlsx';
+          break;
+        default:
+          assets = snipeitAssets.all_assets;
+          filename = 'all_assets.xlsx';
+      }
+
+      // Apply search filter
+      if (searchTerm) {
+        assets = assets.filter(a =>
+          (a.asset_tag && a.asset_tag.toLowerCase().includes(searchTerm)) ||
+          (a.name && a.name.toLowerCase().includes(searchTerm)) ||
+          (a.location && a.location.toLowerCase().includes(searchTerm)) ||
+          (a.model && a.model.toLowerCase().includes(searchTerm))
+        );
+      }
+
+      // Create CSV for download (simple client-side export)
+      const headers = ['Asset Tag', 'Name', 'Model', 'Category', 'Location', 'Assigned To', 'Last Audit', 'Next Audit', 'Status'];
+      const rows = assets.map(a => [
+        a.asset_tag || '',
+        a.name || '',
+        a.model || '',
+        a.category || '',
+        a.location || '',
+        a.assigned_to || '',
+        a.last_audit_date || 'Never',
+        a.next_audit_date || '',
+        a.status || ''
+      ]);
+
+      // Create CSV content
+      let csv = headers.join(',') + '\n';
+      rows.forEach(row => {
+        csv += row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',') + '\n';
+      });
+
+      // Download as CSV (xlsx would require a library on client-side)
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename.replace('.xlsx', '.csv');
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>

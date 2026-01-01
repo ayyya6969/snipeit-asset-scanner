@@ -1,0 +1,28 @@
+{
+  "name": "snipeit-asset-scanner",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "snipe-it",
+    "asset",
+    "audit",
+    "scanner",
+    "pwa"
+  ],
+  "author": "",
+  "license": "ISC",
+  "description": "Snipe-IT Asset Scanner - A PWA for physical asset auditing",
+  "dependencies": {
+    "axios": "^1.13.2",
+    "better-sqlite3": "^12.5.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "html5-qrcode": "^2.3.8",
+    "xlsx": "^0.18.5"
+  }
+}

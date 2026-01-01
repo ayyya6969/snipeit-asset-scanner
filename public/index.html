@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1a73e8">
+  <meta name="description" content="Snipe-IT Asset Audit Scanner">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <title>Snipe-IT Scanner</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      padding-bottom: 20px;
+    }
+
+    .header {
+      background: #1a73e8;
+      color: white;
+      padding: 16px;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .header h1 {
+      font-size: 1.5rem;
+      font-weight: 500;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      color: #333;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.875rem;
+      color: #666;
+      margin-bottom: 6px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #1a73e8;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-primary {
+      background: #1a73e8;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #1557b0;
+    }
+
+    .btn-primary:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .btn-success {
+      background: #34a853;
+      color: white;
+    }
+
+    .btn-danger {
+      background: #ea4335;
+      color: white;
+    }
+
+    .btn-secondary {
+      background: #f1f3f4;
+      color: #333;
+    }
+
+    .btn-outline {
+      background: white;
+      color: #1a73e8;
+      border: 1px solid #1a73e8;
+    }
+
+    #scanner-container {
+      display: none;
+      margin-bottom: 16px;
+    }
+
+    #reader {
+      width: 100%;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-transform: uppercase;
+    }
+
+    .status-match {
+      background: #e6f4ea;
+      color: #137333;
+    }
+
+    .status-mismatch {
+      background: #fce8e6;
+      color: #c5221f;
+    }
+
+    .asset-details {
+      display: none;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .detail-row:last-child {
+      border-bottom: none;
+    }
+
+    .detail-label {
+      color: #666;
+      font-size: 0.875rem;
+    }
+
+    .detail-value {
+      color: #333;
+      font-weight: 500;
+      text-align: right;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px;
+      background: #e8f0fe;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+
+    .user-info .avatar {
+      width: 36px;
+      height: 36px;
+      background: #1a73e8;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 500;
+    }
+
+    .user-actions {
+      margin-left: auto;
+      display: flex;
+      gap: 8px;
+    }
+
+    .user-actions button {
+      width: auto;
+      padding: 8px 12px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .alert {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 0.875rem;
+    }
+
+    .alert-error {
+      background: #fce8e6;
+      color: #c5221f;
+    }
+
+    .alert-success {
+      background: #e6f4ea;
+      color: #137333;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      border: 3px solid #ddd;
+      border-top-color: #1a73e8;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .admin-link {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .admin-link a {
+      color: #1a73e8;
+      text-decoration: none;
+      font-size: 0.875rem;
+    }
+
+    /* Confirmation Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      width: 90%;
+      max-width: 350px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+
+    .modal h3 {
+      margin-bottom: 12px;
+      color: #333;
+    }
+
+    .modal p {
+      color: #666;
+      margin-bottom: 20px;
+      font-size: 0.875rem;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .modal-actions button {
+      flex: 1;
+    }
+
+    .audit-count {
+      background: #e8f0fe;
+      color: #1a73e8;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    /* Searchable Location Dropdown */
+    .location-search-container {
+      position: relative;
+    }
+
+    .location-search-input {
+      width: 100%;
+      padding: 12px;
+      padding-right: 40px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+    }
+
+    .location-search-input:focus {
+      outline: none;
+      border-color: #1a73e8;
+    }
+
+    .location-search-input::placeholder {
+      color: #999;
+    }
+
+    .location-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      max-height: 250px;
+      overflow-y: auto;
+      background: white;
+      border: 1px solid #ddd;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      z-index: 100;
+      display: none;
+    }
+
+    .location-dropdown.open {
+      display: block;
+    }
+
+    .location-option {
+      padding: 12px;
+      cursor: pointer;
+      transition: background 0.15s;
+      border-bottom: 1px solid #eee;
+    }
+
+    .location-option:last-child {
+      border-bottom: none;
+    }
+
+    .location-option:hover,
+    .location-option.highlighted {
+      background: #e8f0fe;
+    }
+
+    .location-option.selected {
+      background: #1a73e8;
+      color: white;
+    }
+
+    .location-no-results {
+      padding: 12px;
+      color: #999;
+      text-align: center;
+      font-size: 0.875rem;
+    }
+
+    .clear-location-btn {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #999;
+      cursor: pointer;
+      padding: 4px;
+      width: auto;
+      font-size: 1.2rem;
+      line-height: 1;
+    }
+
+    .clear-location-btn:hover {
+      color: #666;
+    }
+
+    .selected-location-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #e8f0fe;
+      color: #1a73e8;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      margin-top: 8px;
+    }
+
+    .selected-location-badge .remove-btn {
+      background: none;
+      border: none;
+      color: #1a73e8;
+      cursor: pointer;
+      padding: 0;
+      width: auto;
+      font-size: 1rem;
+      line-height: 1;
+    }
+  </style>
+</head>
+<body>
+  <!-- Confirmation Modal -->
+  <div id="confirm-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <h3>Unlogged Asset</h3>
+      <p>You have an unlogged asset scan. Do you want to discard it and scan a new one?</p>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="modal-cancel-btn">Cancel</button>
+        <button class="btn-danger" id="modal-confirm-btn">Discard</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="header">
+    <h1>Snipe-IT Asset Scanner</h1>
+  </div>
+
+  <div class="container">
+    <!-- Setup Section -->
+    <div id="setup-section" class="card">
+      <h2>Setup</h2>
+      <div class="form-group">
+        <label for="api-token">Snipe-IT API Token</label>
+        <input type="password" id="api-token" placeholder="Enter your API token">
+      </div>
+      <button class="btn-primary" id="connect-btn">Connect</button>
+      <div id="setup-error" class="alert alert-error hidden"></div>
+    </div>
+
+    <!-- User Info -->
+    <div id="user-section" class="hidden">
+      <div class="user-info">
+        <div class="avatar" id="user-avatar">U</div>
+        <div>
+          <div id="user-name" style="font-weight: 500;"></div>
+          <div id="user-email" style="font-size: 0.75rem; color: #666;"></div>
+        </div>
+        <div class="user-actions">
+          <button class="btn-outline" id="export-my-btn" title="Export my audits">Export</button>
+          <button class="btn-secondary" id="logout-btn">Logout</button>
+        </div>
+      </div>
+      <div id="my-audit-count" class="audit-count hidden">
+        You have logged <strong id="audit-count-num">0</strong> audits this session
+      </div>
+    </div>
+
+    <!-- Location Selection -->
+    <div id="location-section" class="card hidden">
+      <h2>Current Physical Location</h2>
+      <div class="form-group">
+        <label for="location-search">Search and select where you are</label>
+        <div class="location-search-container">
+          <input type="text" id="location-search" class="location-search-input" placeholder="Type to search locations..." autocomplete="off">
+          <button type="button" class="clear-location-btn hidden" id="clear-location-btn">&times;</button>
+          <div class="location-dropdown" id="location-dropdown"></div>
+        </div>
+        <input type="hidden" id="location-select" value="">
+        <div id="selected-location-display"></div>
+      </div>
+    </div>
+
+    <!-- Scanner Section -->
+    <div id="scan-section" class="card hidden">
+      <h2>Scan Asset</h2>
+      <div id="scanner-container">
+        <div id="reader"></div>
+      </div>
+      <button class="btn-primary" id="start-scan-btn">Start Scanner</button>
+      <button class="btn-secondary hidden" id="stop-scan-btn" style="margin-top: 10px;">Stop Scanner</button>
+    </div>
+
+    <!-- Asset Details -->
+    <div id="asset-section" class="card asset-details">
+      <h2>Asset Details</h2>
+      <div id="asset-status" style="text-align: center; margin-bottom: 16px;"></div>
+      <div id="asset-info">
+        <div class="detail-row">
+          <span class="detail-label">Asset Tag</span>
+          <span class="detail-value" id="asset-tag"></span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Name</span>
+          <span class="detail-value" id="asset-name"></span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Model</span>
+          <span class="detail-value" id="asset-model"></span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Serial</span>
+          <span class="detail-value" id="asset-serial"></span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Expected Location</span>
+          <span class="detail-value" id="expected-location"></span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Current Location</span>
+          <span class="detail-value" id="current-location"></span>
+        </div>
+      </div>
+      <div class="form-group" style="margin-top: 16px;">
+        <label for="audit-notes">Notes (optional)</label>
+        <textarea id="audit-notes" rows="2" placeholder="Add any notes..."></textarea>
+      </div>
+      <button class="btn-success" id="log-audit-btn">Log Audit</button>
+      <button class="btn-secondary" id="scan-next-btn" style="margin-top: 10px;">Scan Next Asset</button>
+    </div>
+
+    <!-- Success Message -->
+    <div id="success-section" class="card hidden">
+      <div class="alert alert-success">Audit logged successfully!</div>
+      <button class="btn-primary" id="continue-btn">Continue Scanning</button>
+    </div>
+
+    <div class="admin-link">
+      <a href="/admin">Admin Dashboard</a>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script>
+    // State
+    let apiToken = localStorage.getItem('snipeit_token') || '';
+    let currentUser = null;
+    let locations = [];
+    let currentAsset = null;
+    let html5QrCode = null;
+    let isScanning = false;
+    let hasUnloggedAsset = false;
+    let sessionAuditCount = 0;
+    let pendingScanAction = null;
+    let selectedLocationId = null;
+    let highlightedIndex = -1;
+
+    // Elements
+    const setupSection = document.getElementById('setup-section');
+    const userSection = document.getElementById('user-section');
+    const locationSection = document.getElementById('location-section');
+    const scanSection = document.getElementById('scan-section');
+    const assetSection = document.getElementById('asset-section');
+    const successSection = document.getElementById('success-section');
+    const confirmModal = document.getElementById('confirm-modal');
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      if (apiToken) {
+        connectWithToken(apiToken);
+      }
+
+      // Event listeners
+      document.getElementById('connect-btn').addEventListener('click', handleConnect);
+      document.getElementById('logout-btn').addEventListener('click', handleLogout);
+      document.getElementById('export-my-btn').addEventListener('click', exportMyAudits);
+      document.getElementById('start-scan-btn').addEventListener('click', () => attemptStartScanner());
+      document.getElementById('stop-scan-btn').addEventListener('click', stopScanner);
+      document.getElementById('log-audit-btn').addEventListener('click', logAudit);
+      document.getElementById('scan-next-btn').addEventListener('click', () => attemptScanNext());
+      document.getElementById('continue-btn').addEventListener('click', () => attemptScanNext());
+
+      // Location search handlers
+      setupLocationSearch();
+
+      // Modal handlers
+      document.getElementById('modal-cancel-btn').addEventListener('click', hideConfirmModal);
+      document.getElementById('modal-confirm-btn').addEventListener('click', confirmDiscard);
+
+      // Handle page unload
+      window.addEventListener('beforeunload', (e) => {
+        if (hasUnloggedAsset) {
+          e.preventDefault();
+          e.returnValue = 'You have an unlogged asset scan. Are you sure you want to leave?';
+        }
+      });
+    });
+
+    function showConfirmModal() {
+      confirmModal.classList.remove('hidden');
+    }
+
+    function hideConfirmModal() {
+      confirmModal.classList.add('hidden');
+      pendingScanAction = null;
+    }
+
+    function confirmDiscard() {
+      hideConfirmModal();
+      hasUnloggedAsset = false;
+      currentAsset = null;
+      assetSection.style.display = 'none';
+      if (pendingScanAction) {
+        pendingScanAction();
+      }
+    }
+
+    function attemptStartScanner() {
+      if (hasUnloggedAsset) {
+        pendingScanAction = startScanner;
+        showConfirmModal();
+      } else {
+        startScanner();
+      }
+    }
+
+    function attemptScanNext() {
+      // This is only called after success or from scan next button
+      successSection.classList.add('hidden');
+      assetSection.style.display = 'none';
+      hasUnloggedAsset = false;
+      currentAsset = null;
+      startScanner();
+    }
+
+    async function handleConnect() {
+      const token = document.getElementById('api-token').value.trim();
+      if (!token) {
+        showError('setup-error', 'Please enter your API token');
+        return;
+      }
+      await connectWithToken(token);
+    }
+
+    async function connectWithToken(token) {
+      try {
+        // Verify token by fetching user info
+        const response = await fetch('/api/user', {
+          headers: { 'X-API-Token': token }
+        });
+
+        if (!response.ok) {
+          throw new Error('Invalid token');
+        }
+
+        currentUser = await response.json();
+        apiToken = token;
+        localStorage.setItem('snipeit_token', token);
+
+        // Update UI
+        document.getElementById('user-avatar').textContent =
+          (currentUser.first_name?.[0] || '') + (currentUser.last_name?.[0] || 'U');
+        document.getElementById('user-name').textContent =
+          `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() || currentUser.username;
+        document.getElementById('user-email').textContent = currentUser.email || '';
+
+        setupSection.classList.add('hidden');
+        userSection.classList.remove('hidden');
+
+        // Load locations
+        await loadLocations();
+        locationSection.classList.remove('hidden');
+
+        // Load user's audit count
+        await loadMyAuditCount();
+
+      } catch (error) {
+        showError('setup-error', 'Failed to connect. Please check your API token.');
+        localStorage.removeItem('snipeit_token');
+      }
+    }
+
+    async function loadLocations() {
+      try {
+        const response = await fetch('/api/locations', {
+          headers: { 'X-API-Token': apiToken }
+        });
+
+        if (!response.ok) throw new Error('Failed to load locations');
+
+        locations = await response.json();
+        // Sort locations alphabetically
+        locations.sort((a, b) => a.name.localeCompare(b.name));
+      } catch (error) {
+        console.error('Error loading locations:', error);
+      }
+    }
+
+    function setupLocationSearch() {
+      const searchInput = document.getElementById('location-search');
+      const dropdown = document.getElementById('location-dropdown');
+      const clearBtn = document.getElementById('clear-location-btn');
+
+      // Show dropdown on focus
+      searchInput.addEventListener('focus', () => {
+        if (locations.length > 0) {
+          renderLocationDropdown(searchInput.value);
+          dropdown.classList.add('open');
+        }
+      });
+
+      // Filter on input
+      searchInput.addEventListener('input', (e) => {
+        highlightedIndex = -1;
+        renderLocationDropdown(e.target.value);
+        dropdown.classList.add('open');
+      });
+
+      // Keyboard navigation
+      searchInput.addEventListener('keydown', (e) => {
+        const options = dropdown.querySelectorAll('.location-option');
+
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          highlightedIndex = Math.min(highlightedIndex + 1, options.length - 1);
+          updateHighlight(options);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          highlightedIndex = Math.max(highlightedIndex - 1, 0);
+          updateHighlight(options);
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          if (highlightedIndex >= 0 && options[highlightedIndex]) {
+            const locId = parseInt(options[highlightedIndex].dataset.id);
+            selectLocation(locId);
+          }
+        } else if (e.key === 'Escape') {
+          dropdown.classList.remove('open');
+          searchInput.blur();
+        }
+      });
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.location-search-container')) {
+          dropdown.classList.remove('open');
+        }
+      });
+
+      // Clear button
+      clearBtn.addEventListener('click', () => {
+        clearLocation();
+      });
+    }
+
+    function renderLocationDropdown(searchTerm) {
+      const dropdown = document.getElementById('location-dropdown');
+      const term = searchTerm.toLowerCase().trim();
+
+      const filtered = term
+        ? locations.filter(loc => loc.name.toLowerCase().includes(term))
+        : locations;
+
+      if (filtered.length === 0) {
+        dropdown.innerHTML = '<div class="location-no-results">No locations found</div>';
+        return;
+      }
+
+      dropdown.innerHTML = filtered.map((loc, index) => `
+        <div class="location-option ${selectedLocationId === loc.id ? 'selected' : ''} ${index === highlightedIndex ? 'highlighted' : ''}"
+             data-id="${loc.id}"
+             data-name="${escapeHtmlAttr(loc.name)}">
+          ${escapeHtml(loc.name)}
+        </div>
+      `).join('');
+
+      // Add click handlers
+      dropdown.querySelectorAll('.location-option').forEach(option => {
+        option.addEventListener('click', () => {
+          selectLocation(parseInt(option.dataset.id));
+        });
+      });
+    }
+
+    function updateHighlight(options) {
+      options.forEach((opt, idx) => {
+        opt.classList.toggle('highlighted', idx === highlightedIndex);
+      });
+
+      // Scroll into view
+      if (options[highlightedIndex]) {
+        options[highlightedIndex].scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    function selectLocation(locationId) {
+      const location = locations.find(l => l.id === locationId);
+      if (!location) return;
+
+      selectedLocationId = locationId;
+      document.getElementById('location-select').value = locationId;
+      document.getElementById('location-search').value = location.name;
+      document.getElementById('location-dropdown').classList.remove('open');
+      document.getElementById('clear-location-btn').classList.remove('hidden');
+
+      // Show selected badge
+      document.getElementById('selected-location-display').innerHTML = `
+        <div class="selected-location-badge">
+          <span>Selected: <strong>${escapeHtml(location.name)}</strong></span>
+          <button type="button" class="remove-btn" onclick="clearLocation()">&times;</button>
+        </div>
+      `;
+
+      handleLocationChange();
+    }
+
+    function clearLocation() {
+      selectedLocationId = null;
+      document.getElementById('location-select').value = '';
+      document.getElementById('location-search').value = '';
+      document.getElementById('clear-location-btn').classList.add('hidden');
+      document.getElementById('selected-location-display').innerHTML = '';
+      handleLocationChange();
+    }
+
+    function escapeHtmlAttr(text) {
+      if (!text) return '';
+      return text.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    async function loadMyAuditCount() {
+      try {
+        const userName = `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() || currentUser.username;
+        const response = await fetch(`/api/audits/user/${encodeURIComponent(userName)}`);
+        if (response.ok) {
+          const audits = await response.json();
+          if (audits.length > 0) {
+            document.getElementById('audit-count-num').textContent = audits.length;
+            document.getElementById('my-audit-count').classList.remove('hidden');
+          }
+        }
+      } catch (error) {
+        console.error('Error loading audit count:', error);
+      }
+    }
+
+    function updateAuditCountDisplay() {
+      const countEl = document.getElementById('my-audit-count');
+      const numEl = document.getElementById('audit-count-num');
+      const currentCount = parseInt(numEl.textContent) || 0;
+      numEl.textContent = currentCount + 1;
+      countEl.classList.remove('hidden');
+    }
+
+    function handleLocationChange() {
+      const locationId = document.getElementById('location-select').value;
+      if (locationId) {
+        scanSection.classList.remove('hidden');
+      } else {
+        scanSection.classList.add('hidden');
+      }
+      assetSection.style.display = 'none';
+      successSection.classList.add('hidden');
+    }
+
+    function handleLogout() {
+      if (hasUnloggedAsset) {
+        if (!confirm('You have an unlogged asset scan. Are you sure you want to logout?')) {
+          return;
+        }
+      }
+      localStorage.removeItem('snipeit_token');
+      apiToken = '';
+      currentUser = null;
+      location.reload();
+    }
+
+    async function exportMyAudits() {
+      const userName = `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() || currentUser.username;
+
+      try {
+        const response = await fetch(`/api/audits/export/user/${encodeURIComponent(userName)}`);
+        if (!response.ok) throw new Error('Export failed');
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `my_audits_${userName}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        alert('Failed to export audits');
+      }
+    }
+
+    async function startScanner() {
+      const scannerContainer = document.getElementById('scanner-container');
+      scannerContainer.style.display = 'block';
+      document.getElementById('start-scan-btn').classList.add('hidden');
+      document.getElementById('stop-scan-btn').classList.remove('hidden');
+
+      html5QrCode = new Html5Qrcode("reader");
+
+      try {
+        await html5QrCode.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 }
+          },
+          onScanSuccess,
+          onScanFailure
+        );
+        isScanning = true;
+      } catch (err) {
+        console.error('Error starting scanner:', err);
+        alert('Could not start camera. Please ensure camera permissions are granted.');
+        stopScanner();
+      }
+    }
+
+    async function stopScanner() {
+      if (html5QrCode && isScanning) {
+        try {
+          await html5QrCode.stop();
+        } catch (err) {
+          console.error('Error stopping scanner:', err);
+        }
+        isScanning = false;
+      }
+
+      document.getElementById('scanner-container').style.display = 'none';
+      document.getElementById('start-scan-btn').classList.remove('hidden');
+      document.getElementById('stop-scan-btn').classList.add('hidden');
+    }
+
+    async function onScanSuccess(decodedText) {
+      // Check if there's an unlogged asset
+      if (hasUnloggedAsset) {
+        await stopScanner();
+        pendingScanAction = async () => {
+          await processScan(decodedText);
+        };
+        showConfirmModal();
+        return;
+      }
+
+      await processScan(decodedText);
+    }
+
+    async function processScan(decodedText) {
+      // Stop scanning
+      await stopScanner();
+
+      // Extract asset ID from URL
+      // Expected format: https://snipeit.example.com/hardware/123
+      const match = decodedText.match(/\/hardware\/(\d+)/);
+
+      if (!match) {
+        alert('Invalid QR code. Expected Snipe-IT asset URL.');
+        startScanner();
+        return;
+      }
+
+      const assetId = match[1];
+      await fetchAsset(assetId);
+    }
+
+    function onScanFailure(error) {
+      // Ignore scan failures (normal when no QR in view)
+    }
+
+    async function fetchAsset(assetId) {
+      try {
+        const response = await fetch(`/api/assets/${assetId}`, {
+          headers: { 'X-API-Token': apiToken }
+        });
+
+        if (!response.ok) {
+          throw new Error('Asset not found');
+        }
+
+        currentAsset = await response.json();
+        hasUnloggedAsset = true;
+        displayAsset();
+      } catch (error) {
+        alert('Failed to fetch asset details: ' + error.message);
+        startScanner();
+      }
+    }
+
+    function displayAsset() {
+      const locationSelect = document.getElementById('location-select');
+      const actualLocationId = parseInt(locationSelect.value);
+      const actualLocation = locations.find(l => l.id === actualLocationId);
+
+      const expectedLocationId = currentAsset.location?.id;
+      const isMatch = expectedLocationId === actualLocationId;
+
+      // Update status
+      const statusEl = document.getElementById('asset-status');
+      statusEl.innerHTML = isMatch
+        ? '<span class="status-badge status-match">Location Match</span>'
+        : '<span class="status-badge status-mismatch">Location Mismatch</span>';
+
+      // Update details
+      document.getElementById('asset-tag').textContent = currentAsset.asset_tag || 'N/A';
+      document.getElementById('asset-name').textContent = currentAsset.name || 'N/A';
+      document.getElementById('asset-model').textContent = currentAsset.model?.name || 'N/A';
+      document.getElementById('asset-serial').textContent = currentAsset.serial || 'N/A';
+      document.getElementById('expected-location').textContent = currentAsset.location?.name || 'Not assigned';
+      document.getElementById('current-location').textContent = actualLocation?.name || 'N/A';
+
+      // Show asset section
+      assetSection.style.display = 'block';
+      successSection.classList.add('hidden');
+    }
+
+    async function logAudit() {
+      const locationSelect = document.getElementById('location-select');
+      const actualLocationId = parseInt(locationSelect.value);
+      const actualLocation = locations.find(l => l.id === actualLocationId);
+      const notes = document.getElementById('audit-notes').value.trim();
+
+      const auditData = {
+        asset_id: currentAsset.id,
+        asset_tag: currentAsset.asset_tag,
+        asset_name: currentAsset.name,
+        expected_location_id: currentAsset.location?.id || null,
+        expected_location_name: currentAsset.location?.name || 'Not assigned',
+        actual_location_id: actualLocationId,
+        actual_location_name: actualLocation?.name,
+        notes: notes,
+        user_name: currentUser ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() || currentUser.username : 'Unknown'
+      };
+
+      try {
+        const response = await fetch('/api/audit', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Token': apiToken
+          },
+          body: JSON.stringify(auditData)
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to log audit');
+        }
+
+        const result = await response.json();
+
+        // Mark as logged
+        hasUnloggedAsset = false;
+
+        // Update count
+        updateAuditCountDisplay();
+
+        // Show success
+        assetSection.style.display = 'none';
+        successSection.classList.remove('hidden');
+
+        // Clear notes
+        document.getElementById('audit-notes').value = '';
+        currentAsset = null;
+
+      } catch (error) {
+        alert('Failed to log audit: ' + error.message);
+      }
+    }
+
+    function showError(elementId, message) {
+      const el = document.getElementById(elementId);
+      el.textContent = message;
+      el.classList.remove('hidden');
+      setTimeout(() => el.classList.add('hidden'), 5000);
+    }
+
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('Service Worker registered'))
+        .catch(err => console.log('Service Worker registration failed:', err));
+    }
+  </script>
+</body>
+</html>
