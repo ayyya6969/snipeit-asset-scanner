@@ -459,11 +459,17 @@
     <!-- Setup Section -->
     <div id="setup-section" class="card">
       <h2>Setup</h2>
-      <div class="form-group">
-        <label for="api-token">Snipe-IT API Token</label>
-        <input type="password" id="api-token" placeholder="Enter your API token">
+      <div id="token-input-section">
+        <div class="form-group">
+          <label for="api-token">Snipe-IT API Token</label>
+          <input type="password" id="api-token" placeholder="Enter your API token">
+        </div>
+        <button class="btn-primary" id="connect-btn">Connect</button>
       </div>
-      <button class="btn-primary" id="connect-btn">Connect</button>
+      <div id="token-connecting" class="hidden" style="text-align: center; padding: 20px;">
+        <div class="spinner"></div>
+        <p style="margin-top: 10px; color: #666;">Connecting with saved token...</p>
+      </div>
       <div id="setup-error" class="alert alert-error hidden"></div>
     </div>
 
@@ -561,8 +567,40 @@
 
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script>
+    // Token expiry: 1 month in milliseconds
+    const TOKEN_EXPIRY_MS = 30 * 24 * 60 * 60 * 1000;
+
+    // Helper functions for token with expiry
+    function getStoredToken(key) {
+      const data = localStorage.getItem(key);
+      if (!data) return null;
+      try {
+        const parsed = JSON.parse(data);
+        if (parsed.expiry && Date.now() > parsed.expiry) {
+          localStorage.removeItem(key);
+          return null;
+        }
+        return parsed.token;
+      } catch (e) {
+        // Legacy format (plain string) - migrate it
+        return data;
+      }
+    }
+
+    function setStoredToken(key, token) {
+      const data = {
+        token: token,
+        expiry: Date.now() + TOKEN_EXPIRY_MS
+      };
+      localStorage.setItem(key, JSON.stringify(data));
+    }
+
+    function removeStoredToken(key) {
+      localStorage.removeItem(key);
+    }
+
     // State
-    let apiToken = localStorage.getItem('snipeit_token') || '';
+    let apiToken = getStoredToken('snipeit_token') || '';
     let currentUser = null;
     let locations = [];
     let currentAsset = null;
@@ -586,7 +624,10 @@
     // Initialize
     document.addEventListener('DOMContentLoaded', () => {
       if (apiToken) {
-        connectWithToken(apiToken);
+        // Hide token input and show connecting message when using cached token
+        document.getElementById('token-input-section').classList.add('hidden');
+        document.getElementById('token-connecting').classList.remove('hidden');
+        connectWithToken(apiToken, true);
       }
 
       // Event listeners
@@ -672,7 +713,7 @@
       await connectWithToken(token);
     }
 
-    async function connectWithToken(token) {
+    async function connectWithToken(token, fromCache = false) {
       try {
         // Verify token by fetching user info
         const response = await fetch('/api/user', {
@@ -685,7 +726,7 @@
 
         currentUser = await response.json();
         apiToken = token;
-        localStorage.setItem('snipeit_token', token);
+        setStoredToken('snipeit_token', token);
 
         // Update UI
         document.getElementById('user-avatar').textContent =
@@ -705,8 +746,14 @@
         await loadMyAuditCount();
 
       } catch (error) {
+        // If connecting from cache failed, show the token input section again
+        if (fromCache) {
+          document.getElementById('token-input-section').classList.remove('hidden');
+          document.getElementById('token-connecting').classList.add('hidden');
+        }
         showError('setup-error', 'Failed to connect. Please check your API token.');
-        localStorage.removeItem('snipeit_token');
+        removeStoredToken('snipeit_token');
+        apiToken = '';
       }
     }
 
@@ -906,7 +953,7 @@
           return;
         }
       }
-      localStorage.removeItem('snipeit_token');
+      removeStoredToken('snipeit_token');
       apiToken = '';
       currentUser = null;
       location.reload();
@@ -1062,10 +1109,35 @@
       const actualLocation = locations.find(l => l.id === actualLocationId);
       const notes = document.getElementById('audit-notes').value.trim();
 
+      // Extract SAP Asset Number from custom fields
+      let sapAssetNumber = null;
+      if (currentAsset.custom_fields) {
+        // Debug: log custom fields structure
+        console.log('Custom fields:', currentAsset.custom_fields);
+
+        // Try exact field name match first
+        const sapField = currentAsset.custom_fields['SAP Asset Number / ID'] ||
+                         currentAsset.custom_fields['SAP Asset Number'];
+
+        if (sapField) {
+          sapAssetNumber = sapField.value || null;
+        } else {
+          // Search through all custom fields for SAP-related field
+          for (const [fieldName, fieldData] of Object.entries(currentAsset.custom_fields)) {
+            if (fieldName.toLowerCase().includes('sap') ||
+                (fieldData && fieldData.field && fieldData.field.toLowerCase().includes('sap'))) {
+              sapAssetNumber = fieldData.value || null;
+              break;
+            }
+          }
+        }
+      }
+
       const auditData = {
         asset_id: currentAsset.id,
         asset_tag: currentAsset.asset_tag,
         asset_name: currentAsset.name,
+        sap_asset_number: sapAssetNumber,
         expected_location_id: currentAsset.location?.id || null,
         expected_location_name: currentAsset.location?.name || 'Not assigned',
         actual_location_id: actualLocationId,

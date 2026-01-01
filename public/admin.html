@@ -89,6 +89,21 @@
       background: #1557b0;
     }
 
+    .btn-resolve {
+      background: #1a73e8;
+      color: white;
+      padding: 6px 12px;
+    }
+
+    .btn-resolve:hover {
+      background: #1557b0;
+    }
+
+    .btn-resolve:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
     .container {
       padding: 24px;
       max-width: 1400px;
@@ -123,6 +138,8 @@
 
     .stat-card.match .value { color: #34a853; }
     .stat-card.mismatch .value { color: #ea4335; }
+    .stat-card.resolved { border-left: 4px solid #1a73e8; }
+    .stat-card.resolved .value { color: #1a73e8; }
 
     .table-container {
       background: white;
@@ -146,6 +163,8 @@
 
     .table-wrapper {
       overflow-x: auto;
+      max-height: calc(100vh - 450px);
+      overflow-y: auto;
     }
 
     table {
@@ -166,6 +185,9 @@
       font-size: 0.75rem;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      position: sticky;
+      top: 0;
+      z-index: 1;
     }
 
     td {
@@ -175,6 +197,14 @@
 
     tr:hover {
       background: #f8f9fa;
+    }
+
+    tr.selected {
+      background: #e3f2fd;
+    }
+
+    tr.selected:hover {
+      background: #bbdefb;
     }
 
     .status-badge {
@@ -194,6 +224,11 @@
     .status-mismatch {
       background: #fce8e6;
       color: #c5221f;
+    }
+
+    .status-resolved {
+      background: #e8f0fe;
+      color: #1a73e8;
     }
 
     .posted-yes {
@@ -218,6 +253,8 @@
       display: flex;
       gap: 12px;
       margin-bottom: 16px;
+      flex-wrap: wrap;
+      align-items: center;
     }
 
     .filter-select {
@@ -345,8 +382,8 @@
 
     /* API Token Section */
     .api-token-section {
-      background: #fff3e0;
-      border: 1px solid #ffcc80;
+      background: #e8f0fe;
+      border: 1px solid #c5d9f7;
       border-radius: 8px;
       padding: 16px;
       margin-bottom: 24px;
@@ -373,6 +410,57 @@
       border: 1px solid #ddd;
       border-radius: 6px;
       font-size: 0.875rem;
+    }
+
+    /* Bulk Actions Bar */
+    .bulk-actions-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      background: #e8f0fe;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      border: 1px solid #c5d9f7;
+    }
+
+    .bulk-actions-bar.hidden {
+      display: none;
+    }
+
+    .bulk-actions-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .bulk-actions-info .selected-count {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #1a73e8;
+      background: white;
+      padding: 6px 16px;
+      border-radius: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .bulk-actions-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-secondary {
+      background: #f1f3f4;
+      color: #333;
+    }
+
+    .btn-secondary:hover {
+      background: #e0e0e0;
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 0.8rem;
     }
 
     /* Unaudited Stats */
@@ -424,13 +512,66 @@
       color: #666;
     }
 
-    .btn-secondary {
-      background: #f1f3f4;
-      color: #333;
+    /* Sortable headers */
+    th.sortable {
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+      padding-right: 24px;
     }
 
-    .btn-secondary:hover {
-      background: #e0e0e0;
+    th.sortable:hover {
+      background: #e8eaed;
+    }
+
+    th.sortable::after {
+      content: '↕';
+      position: absolute;
+      right: 8px;
+      color: #999;
+      font-size: 0.7rem;
+    }
+
+    th.sortable.asc::after {
+      content: '↑';
+      color: #1a73e8;
+    }
+
+    th.sortable.desc::after {
+      content: '↓';
+      color: #1a73e8;
+    }
+
+    /* Checkbox styling */
+    .row-checkbox {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: #1a73e8;
+    }
+
+    th .row-checkbox {
+      margin: 0;
+    }
+
+    /* Action buttons */
+    .action-btns {
+      display: flex;
+      gap: 6px;
+    }
+
+    /* Cache status */
+    .cache-status {
+      margin-bottom: 16px;
+      padding: 8px 12px;
+      background: #e8f5e9;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      color: #2e7d32;
+    }
+
+    .cache-status a {
+      color: #1a73e8;
     }
 
     @media (max-width: 768px) {
@@ -494,69 +635,93 @@
 
       <!-- Tab: Audit Records -->
       <div class="tab-content active" id="tab-audits">
-      <div class="stats">
-        <div class="stat-card">
-          <h3>Total Audits</h3>
-          <div class="value" id="stat-total">0</div>
+        <div class="stats">
+          <div class="stat-card">
+            <h3>Total Audits</h3>
+            <div class="value" id="stat-total">0</div>
+          </div>
+          <div class="stat-card match">
+            <h3>Matches</h3>
+            <div class="value" id="stat-match">0</div>
+          </div>
+          <div class="stat-card mismatch">
+            <h3>Mismatches</h3>
+            <div class="value" id="stat-mismatch">0</div>
+          </div>
+          <div class="stat-card resolved">
+            <h3>Resolved</h3>
+            <div class="value" id="stat-resolved">0</div>
+          </div>
+          <div class="stat-card">
+            <h3>Posted to Snipe-IT</h3>
+            <div class="value" id="stat-posted">0</div>
+          </div>
         </div>
-        <div class="stat-card match">
-          <h3>Matches</h3>
-          <div class="value" id="stat-match">0</div>
-        </div>
-        <div class="stat-card mismatch">
-          <h3>Mismatches</h3>
-          <div class="value" id="stat-mismatch">0</div>
-        </div>
-        <div class="stat-card">
-          <h3>Posted to Snipe-IT</h3>
-          <div class="value" id="stat-posted">0</div>
-        </div>
-      </div>
 
-      <div class="filters">
-        <select class="filter-select" id="status-filter">
-          <option value="">All Status</option>
-          <option value="match">Match</option>
-          <option value="mismatch">Mismatch</option>
-        </select>
-        <input type="text" class="search-input" id="search-input" placeholder="Search by asset tag or name...">
-      </div>
+        <!-- API Token for resolve actions (hidden when token is cached) -->
+        <div id="audit-api-token-section" class="api-token-section" style="display: none;">
+          <div class="form-group">
+            <label for="audit-snipeit-token">Snipe-IT API Token (required to resolve mismatches)</label>
+            <input type="password" id="audit-snipeit-token" placeholder="Enter your Snipe-IT API token">
+          </div>
+          <button class="btn btn-primary" id="save-audit-token-btn">Save Token</button>
+        </div>
 
-      <div class="table-container">
-        <div class="table-header">
-          <h2>Audit Records</h2>
-          <button class="btn btn-danger" id="clear-all-btn" style="display: none;">Clear All</button>
+        <!-- Bulk Actions Bar -->
+        <div class="bulk-actions-bar hidden" id="bulk-actions-bar">
+          <div class="bulk-actions-info">
+            <span class="selected-count" id="selected-count">0 selected</span>
+          </div>
+          <div class="bulk-actions-buttons">
+            <button class="btn btn-resolve" id="bulk-resolve-btn" disabled>Resolve Selected</button>
+            <button class="btn btn-secondary btn-sm" id="clear-selection-btn">Clear</button>
+          </div>
         </div>
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Asset Tag</th>
-                <th>Asset Name</th>
-                <th>Expected Location</th>
-                <th>Actual Location</th>
-                <th>Status</th>
-                <th>Audited By</th>
-                <th>Posted</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="audit-table-body">
-            </tbody>
-          </table>
+
+        <div class="filters">
+          <select class="filter-select" id="status-filter">
+            <option value="">All Status</option>
+            <option value="match">Match</option>
+            <option value="mismatch">Mismatch</option>
+            <option value="resolved">Resolved</option>
+          </select>
+          <input type="text" class="search-input" id="search-input" placeholder="Search by asset tag or name...">
+          <button class="btn btn-danger btn-sm" id="clear-all-btn" style="display: none;">Clear All Records</button>
         </div>
-        <div id="empty-state" class="empty-state" style="display: none;">
-          <h3>No audit records yet</h3>
-          <p>Start scanning assets to see records here.</p>
+
+        <div class="table-container">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 40px;"><input type="checkbox" class="row-checkbox" id="select-all-checkbox"></th>
+                  <th class="sortable" data-sort="created_at" onclick="sortAudits('created_at')">Date</th>
+                  <th class="sortable" data-sort="asset_tag" onclick="sortAudits('asset_tag')">Asset Tag</th>
+                  <th class="sortable" data-sort="asset_name" onclick="sortAudits('asset_name')">Asset Name</th>
+                  <th class="sortable" data-sort="sap_asset_number" onclick="sortAudits('sap_asset_number')">SAP Asset #</th>
+                  <th class="sortable" data-sort="expected_location_name" onclick="sortAudits('expected_location_name')">Expected Location</th>
+                  <th class="sortable" data-sort="actual_location_name" onclick="sortAudits('actual_location_name')">Actual Location</th>
+                  <th class="sortable" data-sort="status" onclick="sortAudits('status')">Status</th>
+                  <th class="sortable" data-sort="user_name" onclick="sortAudits('user_name')">Audited By</th>
+                  <th class="sortable" data-sort="snipeit_audit_posted" onclick="sortAudits('snipeit_audit_posted')">Posted</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="audit-table-body">
+              </tbody>
+            </table>
+          </div>
+          <div id="empty-state" class="empty-state" style="display: none;">
+            <h3>No audit records yet</h3>
+            <p>Start scanning assets to see records here.</p>
+          </div>
         </div>
-      </div>
       </div>
 
       <!-- Tab: Unaudited Assets -->
       <div class="tab-content" id="tab-unaudited">
-        <div class="api-token-section">
-          <div class="form-group">
+        <div class="api-token-section" id="unaudited-token-section">
+          <div class="form-group" id="unaudited-token-input-group">
             <label for="snipeit-api-token">Snipe-IT API Token (required to fetch assets)</label>
             <input type="password" id="snipeit-api-token" placeholder="Enter your Snipe-IT API token">
           </div>
@@ -564,8 +729,8 @@
           <button class="btn btn-secondary" id="refresh-assets-btn" style="display: none;">Refresh</button>
         </div>
 
-        <div id="cache-status" style="display: none; margin-bottom: 16px; padding: 8px 12px; background: #e8f5e9; border-radius: 6px; font-size: 0.875rem; color: #2e7d32;">
-          Data loaded from cache (<span id="cache-age">0</span> seconds ago). <a href="#" id="force-refresh-link" style="color: #1a73e8;">Click to refresh</a>
+        <div id="cache-status" class="cache-status" style="display: none;">
+          Data loaded from cache (<span id="cache-age">0</span> seconds ago). <a href="#" id="force-refresh-link">Click to refresh</a>
         </div>
 
         <div id="unaudited-loading" class="loading-spinner" style="display: none;">
@@ -593,14 +758,14 @@
           </div>
 
           <div class="filters">
-            <input type="text" class="search-input" id="unaudited-search-input" placeholder="Search by asset tag, name, or location..." style="width: 300px;">
+            <input type="text" class="search-input" id="unaudited-search-input" placeholder="Search by asset tag, name, SAP #, or location..." style="width: 300px;">
             <button class="btn btn-success" id="export-unaudited-btn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
-              Export Filtered
+              Export CSV
             </button>
           </div>
 
@@ -613,15 +778,16 @@
               <table>
                 <thead>
                   <tr>
-                    <th>Asset Tag</th>
-                    <th>Name</th>
-                    <th>Model</th>
-                    <th>Category</th>
-                    <th>Location</th>
-                    <th>Assigned To</th>
-                    <th>Last Audit</th>
-                    <th>Next Audit</th>
-                    <th>Status</th>
+                    <th class="sortable" data-sort="asset_tag" onclick="sortUnaudited('asset_tag')">Asset Tag</th>
+                    <th class="sortable" data-sort="name" onclick="sortUnaudited('name')">Name</th>
+                    <th class="sortable" data-sort="sap_asset_number" onclick="sortUnaudited('sap_asset_number')">SAP Asset #</th>
+                    <th class="sortable" data-sort="model" onclick="sortUnaudited('model')">Model</th>
+                    <th class="sortable" data-sort="category" onclick="sortUnaudited('category')">Category</th>
+                    <th class="sortable" data-sort="location" onclick="sortUnaudited('location')">Location</th>
+                    <th class="sortable" data-sort="assigned_to" onclick="sortUnaudited('assigned_to')">Assigned To</th>
+                    <th class="sortable" data-sort="last_audit_date" onclick="sortUnaudited('last_audit_date')">Last Audit</th>
+                    <th class="sortable" data-sort="next_audit_date" onclick="sortUnaudited('next_audit_date')">Next Audit</th>
+                    <th class="sortable" data-sort="status" onclick="sortUnaudited('status')">Status</th>
                   </tr>
                 </thead>
                 <tbody id="unaudited-table-body">
@@ -639,10 +805,48 @@
   </div>
 
   <script>
+    // Token expiry: 1 month in milliseconds
+    const TOKEN_EXPIRY_MS = 30 * 24 * 60 * 60 * 1000;
+
+    // Helper functions for token with expiry
+    function getStoredToken(key) {
+      const data = localStorage.getItem(key);
+      if (!data) return null;
+      try {
+        const parsed = JSON.parse(data);
+        if (parsed.expiry && Date.now() > parsed.expiry) {
+          localStorage.removeItem(key);
+          return null;
+        }
+        return parsed.token;
+      } catch (e) {
+        // Legacy format (plain string) - migrate it
+        return data;
+      }
+    }
+
+    function setStoredToken(key, token) {
+      const data = {
+        token: token,
+        expiry: Date.now() + TOKEN_EXPIRY_MS
+      };
+      localStorage.setItem(key, JSON.stringify(data));
+    }
+
+    function removeStoredToken(key) {
+      localStorage.removeItem(key);
+    }
+
     let allAudits = [];
+    let filteredAudits = [];
     let adminPassword = '';
     let snipeitAssets = null;
     let currentUnauditedFilter = 'all';
+    let auditApiToken = getStoredToken('audit_snipeit_token') || '';
+    let selectedAuditIds = new Set();
+    let currentSort = { column: 'created_at', direction: 'desc' };
+    let currentUnauditedSort = { column: 'asset_tag', direction: 'asc' };
+    let filteredUnauditedAssets = [];
 
     document.addEventListener('DOMContentLoaded', () => {
       // Check if already logged in
@@ -664,6 +868,17 @@
       document.getElementById('search-input').addEventListener('input', filterAudits);
       document.getElementById('clear-all-btn').addEventListener('click', clearAllAudits);
 
+      // Resolve handlers
+      document.getElementById('save-audit-token-btn').addEventListener('click', saveAuditToken);
+      document.getElementById('bulk-resolve-btn').addEventListener('click', bulkResolve);
+      document.getElementById('clear-selection-btn').addEventListener('click', clearSelection);
+      document.getElementById('select-all-checkbox').addEventListener('change', toggleSelectAll);
+
+      // Load saved audit token - hide input section if token exists
+      if (auditApiToken) {
+        document.getElementById('audit-api-token-section').style.display = 'none';
+      }
+
       // Tab handlers
       document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => switchTab(btn.dataset.tab));
@@ -679,10 +894,11 @@
       document.getElementById('unaudited-search-input').addEventListener('input', applyUnauditedFilters);
       document.getElementById('export-unaudited-btn').addEventListener('click', exportUnauditedAssets);
 
-      // Load saved API token
-      const savedToken = localStorage.getItem('snipeit_api_token');
-      if (savedToken) {
-        document.getElementById('snipeit-api-token').value = savedToken;
+      // Load saved API token for unaudited assets - hide input section if token exists
+      const savedUnauditedToken = getStoredToken('snipeit_api_token');
+      if (savedUnauditedToken) {
+        document.getElementById('snipeit-api-token').value = savedUnauditedToken;
+        document.getElementById('unaudited-token-input-group').classList.add('hidden');
       }
     });
 
@@ -728,8 +944,10 @@
         }
 
         allAudits = await response.json();
+        selectedAuditIds.clear();
         updateStats();
-        renderTable(allAudits);
+        updateSortHeaders();
+        filterAudits();
       } catch (error) {
         console.error('Error loading audits:', error);
       }
@@ -739,69 +957,312 @@
       const total = allAudits.length;
       const matches = allAudits.filter(a => a.status === 'match').length;
       const mismatches = allAudits.filter(a => a.status === 'mismatch').length;
+      const resolved = allAudits.filter(a => a.status === 'resolved').length;
       const posted = allAudits.filter(a => a.snipeit_audit_posted).length;
 
       document.getElementById('stat-total').textContent = total;
       document.getElementById('stat-match').textContent = matches;
       document.getElementById('stat-mismatch').textContent = mismatches;
+      document.getElementById('stat-resolved').textContent = resolved;
       document.getElementById('stat-posted').textContent = posted;
 
-      document.getElementById('clear-all-btn').style.display = total > 0 ? 'block' : 'none';
-    }
+      document.getElementById('clear-all-btn').style.display = total > 0 ? 'inline-flex' : 'none';
 
-    function renderTable(audits) {
-      const tbody = document.getElementById('audit-table-body');
-      const emptyState = document.getElementById('empty-state');
+      // Show API token section only if there are mismatches AND no cached token
+      const hasMismatches = mismatches > 0;
+      const hasToken = !!auditApiToken;
+      document.getElementById('audit-api-token-section').style.display = (hasMismatches && !hasToken) ? 'flex' : 'none';
 
-      if (audits.length === 0) {
-        tbody.innerHTML = '';
-        emptyState.style.display = 'block';
-        return;
-      }
-
-      emptyState.style.display = 'none';
-
-      tbody.innerHTML = audits.map(audit => `
-        <tr>
-          <td>${formatDate(audit.created_at)}</td>
-          <td><strong>${escapeHtml(audit.asset_tag)}</strong></td>
-          <td>${escapeHtml(audit.asset_name || '-')}</td>
-          <td>${escapeHtml(audit.expected_location_name || '-')}</td>
-          <td>${escapeHtml(audit.actual_location_name)}</td>
-          <td>
-            <span class="status-badge status-${audit.status}">
-              ${audit.status}
-            </span>
-          </td>
-          <td>${escapeHtml(audit.user_name || '-')}</td>
-          <td class="${audit.snipeit_audit_posted ? 'posted-yes' : 'posted-no'}">
-            ${audit.snipeit_audit_posted ? 'Yes' : 'No'}
-          </td>
-          <td>
-            <button class="btn btn-danger" onclick="deleteAudit(${audit.id})">Delete</button>
-          </td>
-        </tr>
-      `).join('');
+      updateBulkActionsVisibility();
     }
 
     function filterAudits() {
       const statusFilter = document.getElementById('status-filter').value;
       const searchTerm = document.getElementById('search-input').value.toLowerCase();
 
-      let filtered = allAudits;
+      filteredAudits = [...allAudits];
 
       if (statusFilter) {
-        filtered = filtered.filter(a => a.status === statusFilter);
+        filteredAudits = filteredAudits.filter(a => a.status === statusFilter);
       }
 
       if (searchTerm) {
-        filtered = filtered.filter(a =>
+        filteredAudits = filteredAudits.filter(a =>
           (a.asset_tag && a.asset_tag.toLowerCase().includes(searchTerm)) ||
-          (a.asset_name && a.asset_name.toLowerCase().includes(searchTerm))
+          (a.asset_name && a.asset_name.toLowerCase().includes(searchTerm)) ||
+          (a.sap_asset_number && a.sap_asset_number.toLowerCase().includes(searchTerm))
         );
       }
 
-      renderTable(filtered);
+      // Apply sorting
+      applySorting();
+
+      renderTable(filteredAudits);
+    }
+
+    function sortAudits(column) {
+      // Toggle direction if same column, otherwise default to ascending
+      if (currentSort.column === column) {
+        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+      } else {
+        currentSort.column = column;
+        currentSort.direction = 'asc';
+      }
+
+      // Update header UI
+      updateSortHeaders();
+
+      // Re-filter (which includes sorting)
+      filterAudits();
+    }
+
+    function applySorting() {
+      const { column, direction } = currentSort;
+
+      filteredAudits.sort((a, b) => {
+        let valA = a[column];
+        let valB = b[column];
+
+        // Handle nulls/undefined
+        if (valA == null) valA = '';
+        if (valB == null) valB = '';
+
+        // Handle dates
+        if (column === 'created_at' || column === 'resolved_at') {
+          valA = new Date(valA).getTime() || 0;
+          valB = new Date(valB).getTime() || 0;
+        }
+        // Handle booleans
+        else if (column === 'snipeit_audit_posted') {
+          valA = valA ? 1 : 0;
+          valB = valB ? 1 : 0;
+        }
+        // Handle strings (case-insensitive)
+        else if (typeof valA === 'string') {
+          valA = valA.toLowerCase();
+          valB = valB.toLowerCase();
+        }
+
+        if (valA < valB) return direction === 'asc' ? -1 : 1;
+        if (valA > valB) return direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    function updateSortHeaders() {
+      // Remove all sort classes
+      document.querySelectorAll('#tab-audits th.sortable').forEach(th => {
+        th.classList.remove('asc', 'desc');
+      });
+
+      // Add class to current sorted column
+      const currentTh = document.querySelector(`#tab-audits th[data-sort="${currentSort.column}"]`);
+      if (currentTh) {
+        currentTh.classList.add(currentSort.direction);
+      }
+    }
+
+    function renderTable(audits) {
+      const tbody = document.getElementById('audit-table-body');
+      const emptyState = document.getElementById('empty-state');
+      const selectAllCheckbox = document.getElementById('select-all-checkbox');
+
+      if (audits.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.style.display = 'block';
+        selectAllCheckbox.style.display = 'none';
+        return;
+      }
+
+      emptyState.style.display = 'none';
+
+      // Show checkbox column only if there are mismatches
+      const hasMismatches = audits.some(a => a.status === 'mismatch');
+      selectAllCheckbox.style.display = hasMismatches ? 'inline-block' : 'none';
+
+      tbody.innerHTML = audits.map(audit => {
+        const isMismatch = audit.status === 'mismatch';
+        const isSelected = selectedAuditIds.has(audit.id);
+
+        return `
+          <tr class="${isSelected ? 'selected' : ''}" data-id="${audit.id}">
+            <td>
+              ${isMismatch ?
+                `<input type="checkbox" class="row-checkbox audit-checkbox" data-id="${audit.id}" ${isSelected ? 'checked' : ''} onchange="toggleAuditSelection(${audit.id})">` :
+                ''}
+            </td>
+            <td>${formatDate(audit.created_at)}</td>
+            <td><strong>${escapeHtml(audit.asset_tag)}</strong></td>
+            <td>${escapeHtml(audit.asset_name || '-')}</td>
+            <td>${escapeHtml(audit.sap_asset_number || '-')}</td>
+            <td>${escapeHtml(audit.expected_location_name || '-')}</td>
+            <td>${escapeHtml(audit.actual_location_name)}</td>
+            <td>
+              <span class="status-badge status-${audit.status}">${audit.status}</span>
+              ${audit.resolved_at ? `<br><small style="color: #666;">by ${escapeHtml(audit.resolved_by)} at ${formatDate(audit.resolved_at)}</small>` : ''}
+            </td>
+            <td>${escapeHtml(audit.user_name || '-')}</td>
+            <td class="${audit.snipeit_audit_posted ? 'posted-yes' : 'posted-no'}">
+              ${audit.snipeit_audit_posted ? 'Yes' : 'No'}
+            </td>
+            <td>
+              <div class="action-btns">
+                ${isMismatch ? `<button class="btn btn-resolve btn-sm" onclick="resolveSingle(${audit.id})">Resolve</button>` : ''}
+                <button class="btn btn-danger btn-sm" onclick="deleteAudit(${audit.id})">Delete</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      updateSelectAllState();
+    }
+
+    function toggleAuditSelection(id) {
+      if (selectedAuditIds.has(id)) {
+        selectedAuditIds.delete(id);
+      } else {
+        selectedAuditIds.add(id);
+      }
+      renderTable(filteredAudits);
+      updateBulkActionsVisibility();
+    }
+
+    function toggleSelectAll() {
+      const selectAll = document.getElementById('select-all-checkbox').checked;
+      const mismatchAudits = filteredAudits.filter(a => a.status === 'mismatch');
+
+      if (selectAll) {
+        mismatchAudits.forEach(a => selectedAuditIds.add(a.id));
+      } else {
+        mismatchAudits.forEach(a => selectedAuditIds.delete(a.id));
+      }
+
+      renderTable(filteredAudits);
+      updateBulkActionsVisibility();
+    }
+
+    function updateSelectAllState() {
+      const selectAllCheckbox = document.getElementById('select-all-checkbox');
+      const mismatchAudits = filteredAudits.filter(a => a.status === 'mismatch');
+      const selectedMismatches = mismatchAudits.filter(a => selectedAuditIds.has(a.id));
+
+      if (mismatchAudits.length === 0) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+      } else if (selectedMismatches.length === 0) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+      } else if (selectedMismatches.length === mismatchAudits.length) {
+        selectAllCheckbox.checked = true;
+        selectAllCheckbox.indeterminate = false;
+      } else {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = true;
+      }
+    }
+
+    function clearSelection() {
+      selectedAuditIds.clear();
+      renderTable(filteredAudits);
+      updateBulkActionsVisibility();
+    }
+
+    function updateBulkActionsVisibility() {
+      const bulkActionsBar = document.getElementById('bulk-actions-bar');
+      const hasMismatches = allAudits.some(a => a.status === 'mismatch');
+      const selectedCount = selectedAuditIds.size;
+
+      if (hasMismatches) {
+        bulkActionsBar.classList.remove('hidden');
+        document.getElementById('selected-count').textContent = `${selectedCount} selected`;
+        document.getElementById('bulk-resolve-btn').disabled = selectedCount === 0 || !auditApiToken;
+      } else {
+        bulkActionsBar.classList.add('hidden');
+      }
+    }
+
+    // Resolve functions
+    function saveAuditToken() {
+      const token = document.getElementById('audit-snipeit-token').value.trim();
+      if (!token) {
+        alert('Please enter a token');
+        return;
+      }
+      auditApiToken = token;
+      setStoredToken('audit_snipeit_token', token);
+      // Hide token input section
+      document.getElementById('audit-api-token-section').style.display = 'none';
+      updateBulkActionsVisibility();
+    }
+
+    async function resolveSingle(auditId) {
+      if (!auditApiToken) {
+        alert('Please enter and save your Snipe-IT API token first');
+        return;
+      }
+
+      if (!confirm('This will update the asset location in Snipe-IT to the actual location. Continue?')) {
+        return;
+      }
+
+      await resolveAudits([auditId]);
+    }
+
+    async function bulkResolve() {
+      if (selectedAuditIds.size === 0) {
+        alert('No audits selected');
+        return;
+      }
+
+      if (!auditApiToken) {
+        alert('Please enter and save your Snipe-IT API token first');
+        return;
+      }
+
+      if (!confirm(`This will update ${selectedAuditIds.size} asset(s) location in Snipe-IT. Continue?`)) {
+        return;
+      }
+
+      await resolveAudits(Array.from(selectedAuditIds));
+    }
+
+    async function resolveAudits(auditIds) {
+      const resolveBtn = document.getElementById('bulk-resolve-btn');
+      const originalText = resolveBtn.textContent;
+      resolveBtn.disabled = true;
+      resolveBtn.textContent = 'Resolving...';
+
+      try {
+        const response = await fetch('/api/audits/resolve', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Password': adminPassword,
+            'X-Api-Token': auditApiToken
+          },
+          body: JSON.stringify({
+            audit_ids: auditIds,
+            resolved_by: 'Admin'
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.resolved > 0) {
+          alert(`Successfully resolved ${result.resolved} audit(s).${result.failed > 0 ? ` ${result.failed} failed.` : ''}`);
+          clearSelection();
+          await loadAudits();
+        } else if (result.errors && result.errors.length > 0) {
+          alert('Failed to resolve: ' + result.errors.map(e => e.error).join(', '));
+        }
+      } catch (error) {
+        console.error('Error resolving audits:', error);
+        alert('Failed to resolve audits: ' + error.message);
+      } finally {
+        resolveBtn.disabled = false;
+        resolveBtn.textContent = originalText;
+      }
     }
 
     async function deleteAudit(id) {
@@ -839,12 +1300,6 @@
     }
 
     function exportExcel() {
-      // Create a form to submit with password header
-      const form = document.createElement('form');
-      form.method = 'GET';
-      form.action = '/api/audits/export';
-
-      // We need to use fetch for headers, then trigger download
       fetch('/api/audits/export', {
         headers: { 'X-Admin-Password': adminPassword }
       })
@@ -867,17 +1322,15 @@
     function formatDate(dateInput) {
       if (!dateInput) return '-';
 
-      // Handle Snipe-IT date object format { datetime: "...", formatted: "..." }
       if (typeof dateInput === 'object' && dateInput !== null) {
         if (dateInput.formatted) return dateInput.formatted;
         if (dateInput.datetime) dateInput = dateInput.datetime;
         else return '-';
       }
 
-      // Handle string date
       if (typeof dateInput === 'string') {
         const date = new Date(dateInput);
-        if (isNaN(date.getTime())) return dateInput; // Return as-is if can't parse
+        if (isNaN(date.getTime())) return dateInput;
         return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       }
 
@@ -903,14 +1356,19 @@
 
     // Fetch assets from Snipe-IT
     async function fetchSnipeitAssets(forceRefresh = false) {
-      const apiToken = document.getElementById('snipeit-api-token').value.trim();
+      let apiToken = document.getElementById('snipeit-api-token').value.trim();
+      // If input is empty, try to use saved token
+      if (!apiToken) {
+        apiToken = getStoredToken('snipeit_api_token');
+      }
       if (!apiToken) {
         alert('Please enter your Snipe-IT API token');
         return;
       }
 
-      // Save token for future use
-      localStorage.setItem('snipeit_api_token', apiToken);
+      setStoredToken('snipeit_api_token', apiToken);
+      // Hide token input section
+      document.getElementById('unaudited-token-input-group').classList.add('hidden');
 
       const loadingEl = document.getElementById('unaudited-loading');
       const loadingText = document.getElementById('loading-text');
@@ -943,9 +1401,9 @@
 
         snipeitAssets = await response.json();
         updateUnauditedStats();
+        updateUnauditedSortHeaders();
         applyUnauditedFilters();
 
-        // Show cache status if data was cached
         if (snipeitAssets.cached) {
           document.getElementById('cache-age').textContent = snipeitAssets.cache_age;
           cacheStatus.style.display = 'block';
@@ -979,7 +1437,6 @@
     function filterUnauditedAssets(filter) {
       currentUnauditedFilter = filter;
 
-      // Update card selection
       document.querySelectorAll('.unaudited-stat-card').forEach(card => {
         card.classList.toggle('selected', card.dataset.filter === filter);
       });
@@ -992,40 +1449,100 @@
 
       const searchTerm = document.getElementById('unaudited-search-input').value.toLowerCase();
 
-      // Get assets based on filter
       let assets;
       let title;
       switch (currentUnauditedFilter) {
         case 'never':
-          assets = snipeitAssets.never_audited;
+          assets = [...snipeitAssets.never_audited];
           title = 'Never Audited Assets';
           break;
         case 'not-this-year':
-          assets = snipeitAssets.not_audited_this_year;
+          assets = [...snipeitAssets.not_audited_this_year];
           title = 'Assets Not Audited This Year';
           break;
         case 'overdue':
-          assets = snipeitAssets.audit_overdue;
+          assets = [...snipeitAssets.audit_overdue];
           title = 'Audit Overdue Assets';
           break;
         default:
-          assets = snipeitAssets.all_assets;
+          assets = [...snipeitAssets.all_assets];
           title = 'All Assets';
       }
 
-      // Apply search filter
       if (searchTerm) {
         assets = assets.filter(a =>
           (a.asset_tag && a.asset_tag.toLowerCase().includes(searchTerm)) ||
           (a.name && a.name.toLowerCase().includes(searchTerm)) ||
           (a.location && a.location.toLowerCase().includes(searchTerm)) ||
-          (a.model && a.model.toLowerCase().includes(searchTerm))
+          (a.model && a.model.toLowerCase().includes(searchTerm)) ||
+          (a.sap_asset_number && a.sap_asset_number.toLowerCase().includes(searchTerm))
         );
       }
 
+      // Apply sorting
+      filteredUnauditedAssets = assets;
+      applyUnauditedSorting();
+
       document.getElementById('unaudited-table-title').textContent = title;
-      document.getElementById('unaudited-count').textContent = `(${assets.length} assets)`;
-      renderUnauditedTable(assets);
+      document.getElementById('unaudited-count').textContent = `(${filteredUnauditedAssets.length} assets)`;
+      renderUnauditedTable(filteredUnauditedAssets);
+    }
+
+    function sortUnaudited(column) {
+      // Toggle direction if same column, otherwise default to ascending
+      if (currentUnauditedSort.column === column) {
+        currentUnauditedSort.direction = currentUnauditedSort.direction === 'asc' ? 'desc' : 'asc';
+      } else {
+        currentUnauditedSort.column = column;
+        currentUnauditedSort.direction = 'asc';
+      }
+
+      // Update header UI
+      updateUnauditedSortHeaders();
+
+      // Re-apply filters (which includes sorting)
+      applyUnauditedFilters();
+    }
+
+    function applyUnauditedSorting() {
+      const { column, direction } = currentUnauditedSort;
+
+      filteredUnauditedAssets.sort((a, b) => {
+        let valA = a[column];
+        let valB = b[column];
+
+        // Handle nulls/undefined
+        if (valA == null) valA = '';
+        if (valB == null) valB = '';
+
+        // Handle dates
+        if (column === 'last_audit_date' || column === 'next_audit_date') {
+          valA = valA ? new Date(valA).getTime() : 0;
+          valB = valB ? new Date(valB).getTime() : 0;
+        }
+        // Handle strings (case-insensitive)
+        else if (typeof valA === 'string') {
+          valA = valA.toLowerCase();
+          valB = valB.toLowerCase();
+        }
+
+        if (valA < valB) return direction === 'asc' ? -1 : 1;
+        if (valA > valB) return direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    function updateUnauditedSortHeaders() {
+      // Remove all sort classes
+      document.querySelectorAll('#tab-unaudited th.sortable').forEach(th => {
+        th.classList.remove('asc', 'desc');
+      });
+
+      // Add class to current sorted column
+      const currentTh = document.querySelector(`#tab-unaudited th[data-sort="${currentUnauditedSort.column}"]`);
+      if (currentTh) {
+        currentTh.classList.add(currentUnauditedSort.direction);
+      }
     }
 
     function renderUnauditedTable(assets) {
@@ -1046,6 +1563,7 @@
         <tr>
           <td><strong>${escapeHtml(asset.asset_tag)}</strong></td>
           <td>${escapeHtml(asset.name || '-')}</td>
+          <td>${escapeHtml(asset.sap_asset_number || '-')}</td>
           <td>${escapeHtml(asset.model || '-')}</td>
           <td>${escapeHtml(asset.category || '-')}</td>
           <td>${escapeHtml(asset.location || '-')}</td>
@@ -1063,44 +1581,44 @@
         return;
       }
 
-      const searchTerm = document.getElementById('unaudited-search-input').value.toLowerCase();
-
-      // Get assets based on current filter
       let assets;
       let filename;
       switch (currentUnauditedFilter) {
         case 'never':
           assets = snipeitAssets.never_audited;
-          filename = 'never_audited_assets.xlsx';
+          filename = 'never_audited_assets.csv';
           break;
         case 'not-this-year':
           assets = snipeitAssets.not_audited_this_year;
-          filename = 'not_audited_this_year.xlsx';
+          filename = 'not_audited_this_year.csv';
           break;
         case 'overdue':
           assets = snipeitAssets.audit_overdue;
-          filename = 'audit_overdue_assets.xlsx';
+          filename = 'audit_overdue_assets.csv';
           break;
         default:
           assets = snipeitAssets.all_assets;
-          filename = 'all_assets.xlsx';
+          filename = 'all_assets.csv';
       }
 
       // Apply search filter
+      const searchTerm = document.getElementById('unaudited-search-input').value.toLowerCase();
       if (searchTerm) {
         assets = assets.filter(a =>
           (a.asset_tag && a.asset_tag.toLowerCase().includes(searchTerm)) ||
           (a.name && a.name.toLowerCase().includes(searchTerm)) ||
           (a.location && a.location.toLowerCase().includes(searchTerm)) ||
-          (a.model && a.model.toLowerCase().includes(searchTerm))
+          (a.model && a.model.toLowerCase().includes(searchTerm)) ||
+          (a.sap_asset_number && a.sap_asset_number.toLowerCase().includes(searchTerm))
         );
       }
 
-      // Create CSV for download (simple client-side export)
-      const headers = ['Asset Tag', 'Name', 'Model', 'Category', 'Location', 'Assigned To', 'Last Audit', 'Next Audit', 'Status'];
+      // Create CSV
+      const headers = ['Asset Tag', 'Name', 'SAP Asset #', 'Model', 'Category', 'Location', 'Assigned To', 'Last Audit', 'Next Audit', 'Status'];
       const rows = assets.map(a => [
         a.asset_tag || '',
         a.name || '',
+        a.sap_asset_number || '',
         a.model || '',
         a.category || '',
         a.location || '',
@@ -1110,18 +1628,16 @@
         a.status || ''
       ]);
 
-      // Create CSV content
       let csv = headers.join(',') + '\n';
       rows.forEach(row => {
         csv += row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',') + '\n';
       });
 
-      // Download as CSV (xlsx would require a library on client-side)
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const blob = new Blob([csv], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = filename.replace('.xlsx', '.csv');
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       a.remove();

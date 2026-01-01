@@ -44,9 +44,22 @@ db.exec(`
     notes TEXT,
     user_name TEXT,
     snipeit_audit_posted INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    resolved_at DATETIME,
+    resolved_by TEXT
   )
 `);
+
+// Add resolved columns if they don't exist (for existing databases)
+try {
+  db.exec(`ALTER TABLE audits ADD COLUMN resolved_at DATETIME`);
+} catch (e) { /* Column already exists */ }
+try {
+  db.exec(`ALTER TABLE audits ADD COLUMN resolved_by TEXT`);
+} catch (e) { /* Column already exists */ }
+try {
+  db.exec(`ALTER TABLE audits ADD COLUMN sap_asset_number TEXT`);
+} catch (e) { /* Column already exists */ }
 
 // API Routes
 
@@ -141,6 +154,7 @@ app.post('/api/audit', async (req, res) => {
     asset_id,
     asset_tag,
     asset_name,
+    sap_asset_number,
     expected_location_id,
     expected_location_name,
     actual_location_id,
@@ -181,15 +195,15 @@ app.post('/api/audit', async (req, res) => {
   try {
     const stmt = db.prepare(`
       INSERT INTO audits (
-        asset_id, asset_tag, asset_name,
+        asset_id, asset_tag, asset_name, sap_asset_number,
         expected_location_id, expected_location_name,
         actual_location_id, actual_location_name,
         status, notes, user_name, snipeit_audit_posted
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const result = stmt.run(
-      asset_id, asset_tag, asset_name,
+      asset_id, asset_tag, asset_name, sap_asset_number || null,
       expected_location_id, expected_location_name,
       actual_location_id, actual_location_name,
       status, notes, user_name, snipeitAuditPosted
@@ -263,6 +277,7 @@ app.get('/api/audits/export', (req, res) => {
       'ID': audit.id,
       'Asset Tag': audit.asset_tag,
       'Asset Name': audit.asset_name,
+      'SAP Asset Number': audit.sap_asset_number || '',
       'Expected Location': audit.expected_location_name,
       'Actual Location': audit.actual_location_name,
       'Status': audit.status.toUpperCase(),
@@ -299,6 +314,7 @@ app.get('/api/audits/export/user/:username', (req, res) => {
       'ID': audit.id,
       'Asset Tag': audit.asset_tag,
       'Asset Name': audit.asset_name,
+      'SAP Asset Number': audit.sap_asset_number || '',
       'Expected Location': audit.expected_location_name,
       'Actual Location': audit.actual_location_name,
       'Status': audit.status.toUpperCase(),
@@ -405,6 +421,27 @@ app.get('/api/snipeit/assets', async (req, res) => {
       const lastAuditDate = parseDate(asset.last_audit_date);
       const nextAuditDate = parseDate(asset.next_audit_date);
 
+      // Extract SAP Asset Number from custom fields (field #17)
+      let sapAssetNumber = null;
+      if (asset.custom_fields && Object.keys(asset.custom_fields).length > 0) {
+        // Try exact field name match first
+        const sapField = asset.custom_fields['SAP Asset Number / ID'] ||
+                         asset.custom_fields['SAP Asset Number'];
+
+        if (sapField) {
+          sapAssetNumber = sapField.value || null;
+        } else {
+          // Search through all custom fields for SAP-related field
+          for (const [fieldName, fieldData] of Object.entries(asset.custom_fields)) {
+            if (fieldName.toLowerCase().includes('sap') ||
+                (fieldData && fieldData.field && fieldData.field.toLowerCase().includes('sap'))) {
+              sapAssetNumber = fieldData.value || null;
+              break;
+            }
+          }
+        }
+      }
+
       return {
         id: asset.id,
         asset_tag: asset.asset_tag,
@@ -416,6 +453,7 @@ app.get('/api/snipeit/assets', async (req, res) => {
         location_id: asset.location?.id || null,
         assigned_to: asset.assigned_to?.name || null,
         status: asset.status_label?.name || null,
+        sap_asset_number: sapAssetNumber,
         last_audit_date: extractDate(asset.last_audit_date),
         next_audit_date: extractDate(asset.next_audit_date),
         never_audited: !asset.last_audit_date,
@@ -454,6 +492,125 @@ app.get('/api/snipeit/assets', async (req, res) => {
       details: error.response?.data || error.message
     });
   }
+});
+
+// Update asset location in Snipe-IT (admin only)
+app.patch('/api/assets/:id/location', async (req, res) => {
+  const adminPassword = req.headers['x-admin-password'];
+  const apiToken = req.headers['x-api-token'];
+  const { location_id } = req.body;
+  const { id } = req.params;
+
+  if (adminPassword !== ADMIN_PASSWORD) {
+    return res.status(401).json({ error: 'Admin password required' });
+  }
+
+  if (!apiToken) {
+    return res.status(401).json({ error: 'Snipe-IT API token required' });
+  }
+
+  if (!location_id) {
+    return res.status(400).json({ error: 'location_id is required' });
+  }
+
+  try {
+    const response = await axios.patch(`${SNIPEIT_URL}/api/v1/hardware/${id}`, {
+      rtd_location_id: location_id
+    }, {
+      headers: {
+        'Authorization': `Bearer ${apiToken}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
+
+    res.json({ success: true, asset: response.data });
+  } catch (error) {
+    console.error('Error updating asset location:', error.response?.data || error.message);
+    res.status(error.response?.status || 500).json({
+      error: 'Failed to update asset location',
+      details: error.response?.data || error.message
+    });
+  }
+});
+
+// Resolve mismatch audits (update location in Snipe-IT and mark as resolved)
+app.post('/api/audits/resolve', async (req, res) => {
+  const adminPassword = req.headers['x-admin-password'];
+  const apiToken = req.headers['x-api-token'];
+  const { audit_ids, resolved_by } = req.body;
+
+  if (adminPassword !== ADMIN_PASSWORD) {
+    return res.status(401).json({ error: 'Admin password required' });
+  }
+
+  if (!apiToken) {
+    return res.status(401).json({ error: 'Snipe-IT API token required' });
+  }
+
+  if (!audit_ids || !Array.isArray(audit_ids) || audit_ids.length === 0) {
+    return res.status(400).json({ error: 'audit_ids array is required' });
+  }
+
+  const results = [];
+  const errors = [];
+
+  for (const auditId of audit_ids) {
+    try {
+      // Get the audit record
+      const audit = db.prepare('SELECT * FROM audits WHERE id = ?').get(auditId);
+
+      if (!audit) {
+        errors.push({ id: auditId, error: 'Audit not found' });
+        continue;
+      }
+
+      if (audit.status !== 'mismatch') {
+        errors.push({ id: auditId, error: 'Audit is not a mismatch' });
+        continue;
+      }
+
+      if (audit.resolved_at) {
+        errors.push({ id: auditId, error: 'Already resolved' });
+        continue;
+      }
+
+      // Update asset location in Snipe-IT
+      await axios.patch(`${SNIPEIT_URL}/api/v1/hardware/${audit.asset_id}`, {
+        rtd_location_id: audit.actual_location_id
+      }, {
+        headers: {
+          'Authorization': `Bearer ${apiToken}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+
+      // Mark audit as resolved in local DB
+      const now = new Date().toISOString();
+      db.prepare(`
+        UPDATE audits
+        SET status = 'resolved', resolved_at = ?, resolved_by = ?
+        WHERE id = ?
+      `).run(now, resolved_by || 'Admin', auditId);
+
+      results.push({ id: auditId, success: true });
+    } catch (error) {
+      console.error(`Error resolving audit ${auditId}:`, error.response?.data || error.message);
+      errors.push({
+        id: auditId,
+        error: error.response?.data?.messages || error.message
+      });
+    }
+  }
+
+  res.json({
+    success: errors.length === 0,
+    resolved: results.length,
+    failed: errors.length,
+    results,
+    errors
+  });
 });
 
 // Delete audit record (admin only)
