@@ -545,7 +545,7 @@
         <textarea id="audit-notes" rows="2" placeholder="Add any notes..."></textarea>
       </div>
       <button class="btn-success" id="log-audit-btn">Log Audit</button>
-      <button class="btn-secondary" id="scan-next-btn" style="margin-top: 10px;">Scan Next Asset</button>
+      <button class="btn-secondary" id="scan-next-btn" style="margin-top: 10px;">Skip &amp; Scan Next</button>
     </div>
 
     <!-- Success Message -->
@@ -596,8 +596,8 @@
       document.getElementById('start-scan-btn').addEventListener('click', () => attemptStartScanner());
       document.getElementById('stop-scan-btn').addEventListener('click', stopScanner);
       document.getElementById('log-audit-btn').addEventListener('click', logAudit);
-      document.getElementById('scan-next-btn').addEventListener('click', () => attemptScanNext());
-      document.getElementById('continue-btn').addEventListener('click', () => attemptScanNext());
+      document.getElementById('scan-next-btn').addEventListener('click', skipAndScanNext);
+      document.getElementById('continue-btn').addEventListener('click', continueScanningAfterSuccess);
 
       // Location search handlers
       setupLocationSearch();
@@ -643,13 +643,23 @@
       }
     }
 
-    function attemptScanNext() {
-      // This is only called after success or from scan next button
-      successSection.classList.add('hidden');
+    function skipAndScanNext() {
+      // Show confirmation before skipping
+      if (!confirm('This asset will NOT be logged. Are you sure you want to skip it?')) {
+        return;
+      }
+      // Clear current asset and start scanning
       assetSection.style.display = 'none';
-      scanSection.classList.remove('hidden');
       hasUnloggedAsset = false;
       currentAsset = null;
+      document.getElementById('audit-notes').value = '';
+      startScanner();
+    }
+
+    function continueScanningAfterSuccess() {
+      // Called after successful log - no confirmation needed
+      successSection.classList.add('hidden');
+      scanSection.classList.remove('hidden');
       startScanner();
     }
 
