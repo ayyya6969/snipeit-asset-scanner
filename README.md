@@ -128,6 +128,37 @@ Required permissions:
 - Audit assets
 - View locations
 
+## Docker Deployment
+
+### Using Docker Compose (Recommended)
+
+1. Create a `.env` file with your configuration:
+   ```
+   SNIPEIT_URL=https://your-snipeit-instance.com
+   ADMIN_PASSWORD=your-secure-password
+   PORT=3000
+   ```
+
+2. Build and run:
+   ```bash
+   docker-compose up -d
+   ```
+
+3. Access the app at `http://localhost:3000`
+
+### Using Docker directly
+
+```bash
+docker build -t snipeit-asset-scanner .
+docker run -d \
+  --name snipeit-scanner \
+  -p 3000:3000 \
+  -e SNIPEIT_URL=https://your-snipeit-instance.com \
+  -e ADMIN_PASSWORD=your-secure-password \
+  -v scanner-data:/app/db \
+  snipeit-asset-scanner
+```
+
 ## Exposing via Cloudflare Tunnel
 
 If your Snipe-IT is behind NAT, you can expose this app using Cloudflare Tunnel:
