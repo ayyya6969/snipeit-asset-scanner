@@ -647,6 +647,7 @@
       // This is only called after success or from scan next button
       successSection.classList.add('hidden');
       assetSection.style.display = 'none';
+      scanSection.classList.remove('hidden');
       hasUnloggedAsset = false;
       currentAsset = null;
       startScanner();
@@ -1085,8 +1086,9 @@
         // Update count
         updateAuditCountDisplay();
 
-        // Show success
+        // Show success, hide scan section
         assetSection.style.display = 'none';
+        scanSection.classList.add('hidden');
         successSection.classList.remove('hidden');
 
         // Clear notes
