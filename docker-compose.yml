@@ -3,20 +3,13 @@ services:
     build: .
     container_name: snipeit-asset-scanner
     restart: unless-stopped
-    ports:
-      - "${PORT:-3000}:3000"
+    network_mode: host
     environment:
-      - PORT=3000
+      - PORT=${PORT:-3000}
       - SNIPEIT_URL=${SNIPEIT_URL}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
     volumes:
       - scanner-data:/app/db
-    networks:
-      - snipeit-network
 
 volumes:
   scanner-data:
-
-networks:
-  snipeit-network:
-    driver: bridge
