@@ -5,6 +5,7 @@ A Progressive Web App (PWA) for performing physical asset audits with Snipe-IT. 
 ## Features
 
 - **QR Code Scanning**: Use your phone camera to scan asset QR codes
+- **Manual Entry**: Enter asset tag or SAP number manually when scanning isn't available
 - **Location Verification**: Compare physical location with Snipe-IT records
 - **Audit Logging**: Records sent to both Snipe-IT and local database
 - **Admin Dashboard**: View all audits, export to Excel, manage records
@@ -64,7 +65,8 @@ A Progressive Web App (PWA) for performing physical asset audits with Snipe-IT. 
 1. Open `http://localhost:3000` on your mobile device
 2. Enter your Snipe-IT Personal API Token
 3. Select your current physical location
-4. Scan asset QR codes
+4. Start the scanner and scan asset QR codes
+   - **Or** use the "Manual Entry" button to enter an asset tag or SAP number manually
 5. Review asset details and location match status
 6. Add optional notes and log the audit
 
@@ -96,6 +98,7 @@ A Progressive Web App (PWA) for performing physical asset audits with Snipe-IT. 
 |----------|--------|-------------|
 | `/api/locations` | GET | Get Snipe-IT locations |
 | `/api/assets/:id` | GET | Get asset by ID |
+| `/api/assets/search` | GET | Search asset by tag or SAP number |
 | `/api/user` | GET | Get current user info |
 | `/api/audit` | POST | Submit an audit |
 | `/api/audits` | GET | Get all audits (admin) |

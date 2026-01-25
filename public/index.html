@@ -436,6 +436,77 @@
       font-size: 1rem;
       line-height: 1;
     }
+
+    /* Manual Entry Styles */
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .btn-row button {
+      flex: 1;
+    }
+
+    .manual-entry-modal .modal {
+      max-width: 400px;
+    }
+
+    .manual-entry-modal .form-group {
+      margin-bottom: 16px;
+    }
+
+    .manual-entry-modal input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+
+    .manual-entry-modal input:focus {
+      outline: none;
+      border-color: #1a73e8;
+    }
+
+    .manual-entry-modal .hint {
+      font-size: 0.75rem;
+      color: #888;
+      margin-top: 6px;
+    }
+
+    .manual-entry-modal .error-msg {
+      color: #c5221f;
+      font-size: 0.875rem;
+      margin-top: 8px;
+      display: none;
+    }
+
+    .manual-entry-modal .error-msg.visible {
+      display: block;
+    }
+
+    .manual-entry-modal .loading-indicator {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: #666;
+      margin-top: 12px;
+    }
+
+    .manual-entry-modal .loading-indicator.visible {
+      display: flex;
+    }
+
+    .btn-warning {
+      background: #f9ab00;
+      color: white;
+    }
+
+    .btn-warning:hover {
+      background: #e69500;
+    }
   </style>
 </head>
 <body>
@@ -447,6 +518,27 @@
       <div class="modal-actions">
         <button class="btn-secondary" id="modal-cancel-btn">Cancel</button>
         <button class="btn-danger" id="modal-confirm-btn">Discard</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manual Entry Modal -->
+  <div id="manual-entry-modal" class="modal-overlay manual-entry-modal hidden">
+    <div class="modal">
+      <h3>Manual Asset Entry</h3>
+      <p>Enter the Asset Tag or SAP Asset Number</p>
+      <div class="form-group">
+        <input type="text" id="manual-asset-input" placeholder="e.g., ASSET-001 or SAP12345" autocomplete="off">
+        <div class="hint">Works with Asset Tags and SAP Asset Numbers</div>
+        <div id="manual-entry-error" class="error-msg"></div>
+        <div id="manual-entry-loading" class="loading-indicator">
+          <div class="spinner"></div>
+          <span>Searching...</span>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="manual-cancel-btn">Cancel</button>
+        <button class="btn-primary" id="manual-search-btn">Search</button>
       </div>
     </div>
   </div>
@@ -514,6 +606,12 @@
       </div>
       <button class="btn-primary" id="start-scan-btn">Start Scanner</button>
       <button class="btn-secondary hidden" id="stop-scan-btn" style="margin-top: 10px;">Stop Scanner</button>
+      <div id="manual-entry-section" class="hidden">
+        <div class="btn-row">
+          <button class="btn-warning" id="manual-entry-btn">Manual Entry</button>
+        </div>
+        <div class="hint" style="text-align: center; margin-top: 8px;">Can't scan? Enter asset tag or SAP number manually</div>
+      </div>
     </div>
 
     <!-- Asset Details -->
@@ -620,6 +718,7 @@
     const assetSection = document.getElementById('asset-section');
     const successSection = document.getElementById('success-section');
     const confirmModal = document.getElementById('confirm-modal');
+    const manualEntryModal = document.getElementById('manual-entry-modal');
 
     // Initialize
     document.addEventListener('DOMContentLoaded', () => {
@@ -647,6 +746,17 @@
       document.getElementById('modal-cancel-btn').addEventListener('click', hideConfirmModal);
       document.getElementById('modal-confirm-btn').addEventListener('click', confirmDiscard);
 
+      // Manual entry handlers
+      document.getElementById('manual-entry-btn').addEventListener('click', () => attemptManualEntry());
+      document.getElementById('manual-cancel-btn').addEventListener('click', hideManualEntryModal);
+      document.getElementById('manual-search-btn').addEventListener('click', performManualSearch);
+      document.getElementById('manual-asset-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          performManualSearch();
+        }
+      });
+
       // Handle page unload
       window.addEventListener('beforeunload', (e) => {
         if (hasUnloggedAsset) {
@@ -670,8 +780,85 @@
       hasUnloggedAsset = false;
       currentAsset = null;
       assetSection.style.display = 'none';
+      scanSection.classList.remove('hidden');
       if (pendingScanAction) {
         pendingScanAction();
+      }
+    }
+
+    // Manual Entry Modal Functions
+    function showManualEntryModal() {
+      document.getElementById('manual-asset-input').value = '';
+      document.getElementById('manual-entry-error').textContent = '';
+      document.getElementById('manual-entry-error').classList.remove('visible');
+      document.getElementById('manual-entry-loading').classList.remove('visible');
+      document.getElementById('manual-search-btn').disabled = false;
+      manualEntryModal.classList.remove('hidden');
+      // Focus the input after a brief delay
+      setTimeout(() => {
+        document.getElementById('manual-asset-input').focus();
+      }, 100);
+    }
+
+    function hideManualEntryModal() {
+      manualEntryModal.classList.add('hidden');
+      pendingScanAction = null;
+    }
+
+    function attemptManualEntry() {
+      if (hasUnloggedAsset) {
+        pendingScanAction = showManualEntryModal;
+        showConfirmModal();
+      } else {
+        showManualEntryModal();
+      }
+    }
+
+    async function performManualSearch() {
+      const input = document.getElementById('manual-asset-input');
+      const errorEl = document.getElementById('manual-entry-error');
+      const loadingEl = document.getElementById('manual-entry-loading');
+      const searchBtn = document.getElementById('manual-search-btn');
+
+      const query = input.value.trim();
+
+      if (!query) {
+        errorEl.textContent = 'Please enter an asset tag or SAP number';
+        errorEl.classList.add('visible');
+        return;
+      }
+
+      // Clear error and show loading
+      errorEl.classList.remove('visible');
+      loadingEl.classList.add('visible');
+      searchBtn.disabled = true;
+
+      try {
+        const response = await fetch(`/api/assets/search?query=${encodeURIComponent(query)}`, {
+          headers: { 'X-API-Token': apiToken }
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Asset not found');
+        }
+
+        currentAsset = await response.json();
+        hasUnloggedAsset = true;
+
+        // Hide modal and stop scanner if running
+        hideManualEntryModal();
+        await stopScanner();
+
+        // Display the asset
+        displayAsset();
+
+      } catch (error) {
+        errorEl.textContent = error.message;
+        errorEl.classList.add('visible');
+      } finally {
+        loadingEl.classList.remove('visible');
+        searchBtn.disabled = false;
       }
     }
 
@@ -691,6 +878,7 @@
       }
       // Clear current asset and start scanning
       assetSection.style.display = 'none';
+      scanSection.classList.remove('hidden');
       hasUnloggedAsset = false;
       currentAsset = null;
       document.getElementById('audit-notes').value = '';
@@ -985,6 +1173,7 @@
       scannerContainer.style.display = 'block';
       document.getElementById('start-scan-btn').classList.add('hidden');
       document.getElementById('stop-scan-btn').classList.remove('hidden');
+      document.getElementById('manual-entry-section').classList.remove('hidden');
 
       html5QrCode = new Html5Qrcode("reader");
 
@@ -1001,8 +1190,13 @@
         isScanning = true;
       } catch (err) {
         console.error('Error starting scanner:', err);
-        alert('Could not start camera. Please ensure camera permissions are granted.');
-        stopScanner();
+        alert('Could not start camera. Please ensure camera permissions are granted, or use Manual Entry.');
+        // Hide scanner but keep manual entry visible
+        document.getElementById('scanner-container').style.display = 'none';
+        document.getElementById('start-scan-btn').classList.remove('hidden');
+        document.getElementById('stop-scan-btn').classList.add('hidden');
+        // Keep manual entry section visible for fallback
+        document.getElementById('manual-entry-section').classList.remove('hidden');
       }
     }
 
@@ -1019,6 +1213,7 @@
       document.getElementById('scanner-container').style.display = 'none';
       document.getElementById('start-scan-btn').classList.remove('hidden');
       document.getElementById('stop-scan-btn').classList.add('hidden');
+      document.getElementById('manual-entry-section').classList.add('hidden');
     }
 
     async function onScanSuccess(decodedText) {
@@ -1098,7 +1293,8 @@
       document.getElementById('expected-location').textContent = currentAsset.location?.name || 'Not assigned';
       document.getElementById('current-location').textContent = actualLocation?.name || 'N/A';
 
-      // Show asset section
+      // Hide scan section and show asset section
+      scanSection.classList.add('hidden');
       assetSection.style.display = 'block';
       successSection.classList.add('hidden');
     }

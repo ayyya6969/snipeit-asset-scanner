@@ -92,6 +92,98 @@ app.get('/api/locations', async (req, res) => {
   }
 });
 
+// Search asset by asset tag or SAP number (for manual entry)
+app.get('/api/assets/search', async (req, res) => {
+  const apiToken = req.headers['x-api-token'];
+  const { query } = req.query;
+
+  if (!apiToken) {
+    return res.status(401).json({ error: 'API token required' });
+  }
+
+  if (!query || query.trim() === '') {
+    return res.status(400).json({ error: 'Search query required' });
+  }
+
+  const searchTerm = query.trim();
+
+  try {
+    // First, try searching by asset tag (exact match)
+    const tagResponse = await axios.get(`${SNIPEIT_URL}/api/v1/hardware/bytag/${encodeURIComponent(searchTerm)}`, {
+      headers: {
+        'Authorization': `Bearer ${apiToken}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
+
+    // If found by tag, return it
+    if (tagResponse.data && tagResponse.data.id) {
+      return res.json(tagResponse.data);
+    }
+  } catch (error) {
+    // Asset not found by tag, continue to search
+    console.log('Asset not found by tag, searching by SAP number...');
+  }
+
+  try {
+    // Search all assets and filter by SAP number
+    const searchResponse = await axios.get(`${SNIPEIT_URL}/api/v1/hardware`, {
+      headers: {
+        'Authorization': `Bearer ${apiToken}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      params: {
+        search: searchTerm,
+        limit: 50
+      }
+    });
+
+    const assets = searchResponse.data.rows || [];
+
+    // First check if any asset tag matches exactly
+    const exactTagMatch = assets.find(a =>
+      a.asset_tag && a.asset_tag.toLowerCase() === searchTerm.toLowerCase()
+    );
+    if (exactTagMatch) {
+      return res.json(exactTagMatch);
+    }
+
+    // Search for SAP asset number match in custom fields
+    for (const asset of assets) {
+      if (asset.custom_fields) {
+        // Try exact field name match first
+        const sapField = asset.custom_fields['SAP Asset Number / ID'] ||
+                         asset.custom_fields['SAP Asset Number'];
+
+        if (sapField && sapField.value && sapField.value.toLowerCase() === searchTerm.toLowerCase()) {
+          return res.json(asset);
+        }
+
+        // Search through all custom fields for SAP-related field
+        for (const [fieldName, fieldData] of Object.entries(asset.custom_fields)) {
+          if ((fieldName.toLowerCase().includes('sap') ||
+               (fieldData && fieldData.field && fieldData.field.toLowerCase().includes('sap'))) &&
+              fieldData && fieldData.value && fieldData.value.toLowerCase() === searchTerm.toLowerCase()) {
+            return res.json(asset);
+          }
+        }
+      }
+    }
+
+    // If still not found, return 404
+    return res.status(404).json({ error: 'Asset not found. Please check the asset tag or SAP number.' });
+
+  } catch (error) {
+    console.error('Error searching asset:', error.response?.data || error.message);
+    res.status(error.response?.status || 500).json({
+      error: 'Failed to search asset',
+      details: error.response?.data || error.message
+    });
+  }
+});
+
 // Get asset by ID (extracted from QR URL)
 app.get('/api/assets/:id', async (req, res) => {
   const apiToken = req.headers['x-api-token'];
